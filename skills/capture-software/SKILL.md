@@ -21,7 +21,19 @@ breadth map - the same folder-plus-index convention as the department SOPs.
    candidates from the SOP indexes: every `tools:` entry in `docs/sops/*/INDEX.md` without a
    matching canon in `docs/software/`. Confirm the list before researching.
 
-2. **Research the public documentation** (web search + fetch): the vendor's developer portal /
+2. **Sweep THIS repo for an existing integration first.** Before (or alongside) the vendor
+   research:
+   - Check `CANONIFY.md` for an integration canon covering the product - if one exists,
+     REFERENCE it in the software canon rather than duplicating its content.
+   - Grep the codebase for the product/vendor name and its API hosts (e.g. `quickbooks`,
+     `intuit`, the SDK package name). Skim the hits enough to characterize what the
+     integration actually does.
+   - The result feeds the canon's **Existing integration** section: integrated (what it does,
+     `file:line` citations, the canon if any) / partial / none found (say what you searched).
+     This is the single highest-value fact for the plan builder - "we already post Bills to
+     this API" changes every feasibility answer.
+
+3. **Research the public documentation** (web search + fetch): the vendor's developer portal /
    docs center. Capture per product:
    - **What it is** - one line, and how THIS company uses it (from the SOPs that list it).
    - **API surface** - REST/GraphQL/SDKs, the major resource areas, docs URLs.
@@ -36,7 +48,7 @@ breadth map - the same folder-plus-index convention as the department SOPs.
      empty rather than guessing a URL - the app falls back to a letter tile.
    Note the retrieval date; vendor docs drift.
 
-3. **Write the canon** at `docs/software/<slug>.md` (kebab-case product name) with frontmatter:
+4. **Write the canon** at `docs/software/<slug>.md` (kebab-case product name) with frontmatter:
 
    ```yaml
    ---
@@ -51,15 +63,18 @@ breadth map - the same folder-plus-index convention as the department SOPs.
    ---
    ```
 
-   Then the sections: What it is / How we use it / API surface / Webhooks & events /
-   Auth & provisioning / Limits & tiers / Docs links. Terse, factual, link-heavy - the plan
-   builder reads this mid-conversation, so favor scannable lists over prose.
+   Then the sections: What it is / How we use it / **Existing integration** (the step-2
+   findings: what our code already does with this product, `file:line` cites + the Canonify
+   canon if one exists - or "none found" with what was searched) / API surface /
+   Webhooks & events / Auth & provisioning / Limits & tiers / Docs links. Terse, factual,
+   link-heavy - the plan builder reads this mid-conversation, so favor scannable lists over
+   prose.
 
-4. **Regenerate `docs/software/INDEX.md`** - one line per canon: `- **<software>**
+5. **Regenerate `docs/software/INDEX.md`** - one line per canon: `- **<software>**
    (`<slug>.md`) - used by: <departments> - <one-line what-it-is>`. Machine-scannable; note at
    the top that Forward Deploy's plan builder routes through it.
 
-5. **Show, then commit.** Present the canon for review (the human vouches for accuracy before it
+6. **Show, then commit.** Present the canon for review (the human vouches for accuracy before it
    becomes planning ground-truth), then commit the canon + INDEX to the configured branch with a
    message like `Software canon: <product> (via /forward-deploy:capture-software)`.
 
@@ -80,6 +95,7 @@ FORWARD DEPLOY - software canon: <product>
 
 Wrote docs/software/<slug>.md (captured <date>)
   API: <one-line summary>   Webhooks: <yes/no - one line>   Auth: <model>
+  Existing integration: <integrated - what it does, file cites | none found>
   Flags: <tier/limit gotchas, or none>
 Regenerated docs/software/INDEX.md (<N> products documented)
 Committed: <sha> (or: awaiting review)
