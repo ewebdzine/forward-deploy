@@ -121,7 +121,15 @@ export default function SopBuilder({
               {m.content}
             </div>
           ))}
-          {busy && <div className="msg msg-assistant muted">thinking...</div>}
+          {busy && (
+            <div className="msg msg-assistant">
+              <span className="typing-dots">
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

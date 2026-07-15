@@ -103,8 +103,15 @@ export default function PlanBuilder({
             </div>
           ))}
           {busy && (
-            <div className="msg msg-assistant muted">
-              exploring the codebase and drafting... (this can take a minute)
+            <div className="msg msg-assistant">
+              <span className="typing-dots">
+                <i />
+                <i />
+                <i />
+              </span>
+              <span className="muted" style={{ marginLeft: 8, fontSize: "0.85rem" }}>
+                exploring the codebase - this can take a minute
+              </span>
             </div>
           )}
         </div>
