@@ -209,7 +209,14 @@ export default function SopBuilder({
       />
       <aside className={`drawer${drawerOpen ? " open" : ""}`} aria-hidden={!drawerOpen}>
         <div className="drawer-head">
-          <h2>SOP draft</h2>
+          <h2>
+            {title || "SOP draft"}{" "}
+            <span
+              className={`status-chip ${dirty ? "status-draft" : "status-approved"}`}
+            >
+              {dirty ? (committed ? "edited" : "draft") : "committed"}
+            </span>
+          </h2>
           <button
             type="button"
             className="link-button"
