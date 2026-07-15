@@ -1,6 +1,6 @@
 {
   "name": "forward-deploy",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Forward-deployed planning for every department. A Claude Code plugin + open-source web app: department managers document their departments as SOPs (stored in your repo next to your Canonify canons) and build developer-ready plans in a Claude-powered, plan-mode-style chat that reads your codebase, canons, SOPs, and branding - with HTML mockups - then routes them to the dev team for review. kickoff deploys the app to Vercel with your own API keys; review-plans and pull-plan close the loop back into Claude Code; doctor keeps the install honest.",
   "author": {
     "name": "ewebdzine",

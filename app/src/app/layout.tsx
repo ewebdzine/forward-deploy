@@ -31,6 +31,7 @@ export default async function RootLayout({
             </Link>
             <nav>
               <Link href="/sops">SOPs</Link>
+              <Link href="/plans">Plans</Link>
               <Link href="/repo">Repo</Link>
               {session.user.role === "admin" && <Link href="/admin">Admin</Link>}
             </nav>

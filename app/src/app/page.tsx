@@ -78,11 +78,12 @@ export default async function HomePage() {
       </div>
 
       <div className="card">
-        <h2 style={{ marginTop: 0 }}>Document your department</h2>
+        <h2 style={{ marginTop: 0 }}>Document, then plan</h2>
         <p className="muted">
           Write <Link href="/sops">SOPs</Link> with Claude - one per process,
-          committed to your repo. The plan builder (Phase 3) lands next and
-          draws on every SOP you write.
+          committed to your repo. Then turn inefficiencies into{" "}
+          <Link href="/plans">developer-ready plans</Link> grounded in your
+          codebase, canons, and every department&apos;s SOPs.
         </p>
       </div>
     </main>

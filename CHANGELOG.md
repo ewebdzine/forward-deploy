@@ -5,7 +5,23 @@ Forward Deploy is pre-1.0.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-15
+
 ### Added
+- **The plan builder (Phase 3)** - the heart of Forward Deploy. A manager starts a plan for their
+  department and works with Claude exactly like Claude Code's plan mode: Claude interviews,
+  actively explores the connected repo mid-conversation (list/read/search tools in an agentic
+  loop), grounds feasibility claims in canons and code, checks other departments' SOP indexes for
+  the same pain or tools, and fills the structured plan document (per `templates/plan-guidelines.md`)
+  incrementally via an `update_plan` tool while the manager watches it grow. `create_mockup`
+  attaches brand-token-styled, self-contained HTML mockups, rendered in sandboxed iframes on the
+  plan page. Context is cache-ordered: identity -> the breadth block (CANONIFY.md + every
+  department's SOP INDEX + the company profile, cache-marked) -> the live plan state, last and
+  uncached, rebuilt every turn. Required sections gate draft -> submitted; every turn's chat is
+  appended to `plan_sessions` for auditability. Plans list/new/view/build pages, status chips,
+  and the submit flow round it out.
+
+### Added (0.2.x line)
 - **Per-department `INDEX.md`** - every SOP commit regenerates
   `docs/sops/<department>/INDEX.md` with one summary line per SOP (topic, tools, the "What this
   covers" first paragraph). It is the Canonify-style breadth map: developers scan it in the repo,

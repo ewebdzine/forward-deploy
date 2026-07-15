@@ -282,6 +282,58 @@ textarea.sop-markdown {
   resize: vertical;
 }
 
+/* plans */
+.status-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.05rem 0.55rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+.status-draft {
+  color: var(--muted);
+}
+.status-submitted,
+.status-in_review {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.status-changes_requested {
+  color: #a06000;
+  border-color: #a06000;
+}
+.status-approved,
+.status-in_development,
+.status-shipped {
+  color: #1d7a3d;
+  border-color: #1d7a3d;
+}
+.status-declined {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.plan-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.plan-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.3rem 0;
+}
+.mockup-figure {
+  margin: 0 0 1rem;
+}
+.mockup-frame {
+  width: 100%;
+  height: 480px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
 /* rendered SOP body */
 .sop-body h2 {
   border-bottom: 1px solid var(--border);
