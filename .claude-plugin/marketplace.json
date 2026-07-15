@@ -1,0 +1,16 @@
+{
+  "name": "forward-deploy",
+  "owner": {
+    "name": "ewebdzine",
+    "email": "brent@ewebdzine.com"
+  },
+  "description": "The Forward Deploy plugin marketplace.",
+  "plugins": [
+    {
+      "name": "forward-deploy",
+      "source": { "source": "url", "url": "https://github.com/ewebdzine/forward-deploy.git" },
+      "description": "Forward-deployed planning for every department: deploy the open-source planning app to Vercel with your own keys (kickoff), let managers write SOPs and build developer-ready plans with Claude, then review and pull approved plans into Claude Code (review-plans / pull-plan).",
+      "homepage": "https://github.com/ewebdzine/forward-deploy"
+    }
+  ]
+}

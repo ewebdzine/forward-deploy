@@ -1,0 +1,16 @@
+# deps / builds
+node_modules/
+.next/
+out/
+dist/
+
+# env - the whole contract is env vars; never commit them
+.env
+.env.*
+!.env.example
+
+# misc
+.DS_Store
+*.log
+.vercel
+.claude/settings.local.json
