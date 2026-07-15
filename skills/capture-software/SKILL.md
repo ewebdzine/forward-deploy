@@ -23,14 +23,20 @@ breadth map - the same folder-plus-index convention as the department SOPs.
 
 2. **Sweep THIS repo for an existing integration first.** Before (or alongside) the vendor
    research:
-   - Check `CANONIFY.md` for an integration canon covering the product - if one exists,
-     REFERENCE it in the software canon rather than duplicating its content.
-   - Grep the codebase for the product/vendor name and its API hosts (e.g. `quickbooks`,
-     `intuit`, the SDK package name). Skim the hits enough to characterize what the
-     integration actually does.
-   - The result feeds the canon's **Existing integration** section: integrated (what it does,
-     `file:line` citations, the canon if any) / partial / none found (say what you searched).
-     This is the single highest-value fact for the plan builder - "we already post Bills to
+   - Check `CANONIFY.md` for an integration canon covering the product; grep the codebase for
+     the product/vendor name and its API hosts (e.g. `quickbooks`, `intuit`, the SDK package
+     name), skimming hits enough to characterize what the integration actually does.
+   - **Two-canon rule:** the software canon documents the PRODUCT; how OUR code integrates it
+     lives in a **Canonify integration canon** (which carries the `verified:`-SHA staleness
+     machinery that keeps `file:line` claims honest). The software canon's **Existing
+     integration** section is therefore a THIN pointer:
+     - Canonify canon exists -> link it (`docs/integrations/<x>.md`) + a one-line summary.
+       Never duplicate its content.
+     - Integration exists in code but NO canon -> minimal bridge cites (a few `file:line`) +
+       recommend `/canonify:create-canon` for it; once that canon exists, slim this section
+       to the link.
+     - Nothing found -> say so, and what was searched.
+   - This is the single highest-value fact for the plan builder - "we already post Bills to
      this API" changes every feasibility answer.
 
 3. **Research the public documentation** (web search + fetch): the vendor's developer portal /
@@ -64,11 +70,9 @@ breadth map - the same folder-plus-index convention as the department SOPs.
    ```
 
    Then the sections: What it is / How we use it / **Existing integration** (the step-2
-   findings: what our code already does with this product, `file:line` cites + the Canonify
-   canon if one exists - or "none found" with what was searched) / API surface /
-   Webhooks & events / Auth & provisioning / Limits & tiers / Docs links. Terse, factual,
-   link-heavy - the plan builder reads this mid-conversation, so favor scannable lists over
-   prose.
+   verdict as a thin pointer per the two-canon rule) / API surface / Webhooks & events /
+   Auth & provisioning / Limits & tiers / Docs links. Terse, factual, link-heavy - the plan
+   builder reads this mid-conversation, so favor scannable lists over prose.
 
 5. **Regenerate `docs/software/INDEX.md`** - one line per canon: `- **<software>**
    (`<slug>.md`) - used by: <departments> - <one-line what-it-is>`. Machine-scannable; note at
@@ -86,6 +90,8 @@ breadth map - the same folder-plus-index convention as the department SOPs.
   the canon documents the product, not the company's account.
 - **Don't duplicate an existing canon.** If `docs/software/<slug>.md` exists, refresh it (compare
   against the current docs, bump `captured:`) instead of writing a second file.
+- **Don't copy Canonify integration-canon content into a software canon.** Code truth lives in
+  the Canonify canon (its staleness machinery keeps it honest); the software canon links to it.
 - **Don't commit without review.** The plan builder will treat this as truth; the human confirms.
 
 ## Output template
