@@ -537,6 +537,72 @@ textarea.sop-markdown {
   padding: 0.3rem 0;
 }
 
+/* ---------- dashboard stat cards + section heads ---------- */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.9rem;
+  margin: 1.1rem 0 1.6rem;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  color: var(--text);
+}
+a.stat-card:hover {
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(30, 25, 15, 0.07);
+}
+.stat-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.stat-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 1.4rem 0 0.6rem;
+}
+.section-head h2 {
+  margin: 0;
+}
+.button-secondary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.32rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-block;
+}
+.button-secondary:hover {
+  border-color: var(--muted);
+  color: var(--text);
+  text-decoration: none;
+}
+
 /* ---------- dashboard tiles (console model-card style) ---------- */
 
 .tile-grid {

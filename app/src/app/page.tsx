@@ -67,6 +67,18 @@ export default async function HomePage() {
   const daypart = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
   const firstName = (session.user.name ?? "").split(" ")[0];
 
+  const totalSops = departmentTiles.reduce((n, d) => n + d.sopCount, 0);
+  const PENDING = [
+    "submitted",
+    "in_review",
+    "changes_requested",
+    "approved",
+    "in_development",
+  ];
+  const pendingPlans = plans.filter((p) => PENDING.includes(p.status)).length;
+  const shippedPlans = plans.filter((p) => p.status === "shipped").length;
+  const isAdmin = session.user.role === "admin";
+
   return (
     <main>
       <h1>
@@ -78,7 +90,35 @@ export default async function HomePage() {
         developer-ready plans.
       </p>
 
-      <h2>Departments</h2>
+      <div className="stat-grid">
+        <Link className="stat-card" href="/sops">
+          <span className="stat-label">Total SOPs</span>
+          <span className="stat-value">{totalSops}</span>
+          <span className="stat-sub">
+            across {departmentTiles.length} department
+            {departmentTiles.length === 1 ? "" : "s"}
+          </span>
+        </Link>
+        <Link className="stat-card" href="/plans?filter=queue">
+          <span className="stat-label">Plans pending</span>
+          <span className="stat-value">{pendingPlans}</span>
+          <span className="stat-sub">submitted through in development</span>
+        </Link>
+        <Link className="stat-card" href="/plans?filter=shipped">
+          <span className="stat-label">Plans deployed</span>
+          <span className="stat-value">{shippedPlans}</span>
+          <span className="stat-sub">shipped by the dev team</span>
+        </Link>
+      </div>
+
+      <div className="section-head">
+        <h2>Departments</h2>
+        {isAdmin && (
+          <Link className="button-secondary" href="/admin/departments">
+            + Add department
+          </Link>
+        )}
+      </div>
       {departmentTiles.length ? (
         <div className="tile-grid">
           {departmentTiles.map((d, i) => (
@@ -113,7 +153,12 @@ export default async function HomePage() {
         </div>
       )}
 
-      <h2>Software</h2>
+      <div className="section-head">
+        <h2>Software</h2>
+        <Link className="button-secondary" href="/software/add">
+          + Add software
+        </Link>
+      </div>
       {software.length ? (
         <div className="tile-grid">
           {software.map((s, i) => (
