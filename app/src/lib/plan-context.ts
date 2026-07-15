@@ -1,4 +1,9 @@
-import { companyDocsPath, getSourceControl, repoDescription } from "@/lib/source-control";
+import {
+  companyDocsPath,
+  getSourceControl,
+  repoDescription,
+  softwareDocsPath,
+} from "@/lib/source-control";
 import { buildIndexMarkdown, listSopDepartments, listSops } from "@/lib/sops";
 import { PLAN_SECTIONS, sectionLabel } from "@/lib/plan-sections";
 
@@ -50,6 +55,19 @@ export async function buildPlanBreadthBlock(): Promise<string> {
     }
   } catch {
     // SOP map is best-effort
+  }
+
+  try {
+    const softwareIndex = await provider.readFile(
+      `${softwareDocsPath()}/INDEX.md`
+    );
+    parts.push(
+      `## Software canon index - the vendor software this company uses\n\nOne canon per product (${softwareDocsPath()}/<slug>.md): its APIs, webhooks, auth, and docs links, researched by the dev team. When the manager names one of these, read its canon (read_repo_file) before assessing integration feasibility. When they name software NOT in this index, say so, work from what they can tell you, record the gap in open_questions, and suggest the dev team add a canon for it (/forward-deploy:capture-software).\n\n${clip(softwareIndex, 15_000)}`
+    );
+  } catch {
+    parts.push(
+      `## Software canons\n\nNo ${softwareDocsPath()}/INDEX.md found - no vendor software is documented yet. When the manager names a software product, work from what they can tell you, record it in open_questions, and suggest the dev team document it with /forward-deploy:capture-software.`
+    );
   }
 
   try {

@@ -21,6 +21,7 @@ Status legend: **Done** / **Partial** / **Planned**.
 | **Review-plans gate** | `/forward-deploy:review-plans` - list submitted plans via the app's token-authed API, read one, reply in its thread | Partial - skill written; blocked on the Phase 4 plans API |
 | **Pull-plan gate** | `/forward-deploy:pull-plan` - fetch an approved plan (sections, mockup HTML, cited files/canons) into Claude Code as the implementation brief; pairs with `/canonify:build` | Partial - skill written; blocked on the Phase 4 plans API |
 | **Doctor gate** | `/forward-deploy:doctor` - keys valid (Anthropic ping, GitHub scopes, DB reachable), app URL healthy, SOP/company-doc paths exist; worklist, never auto-fix | Partial - skill written; app health endpoint lands in Phase 1 |
+| **Capture-software gate** | `/forward-deploy:capture-software` - research one vendor product's public docs (APIs, webhooks, auth, limits, docs links) and write a software canon to `docs/software/<slug>.md` + regenerate `docs/software/INDEX.md`; harvest candidates from SOP `tools:` lists; review-before-commit; refresh (not duplicate) existing canons. The plan builder loads the index in its breadth block, reads a named product's canon before assessing feasibility, and flags undocumented software in open_questions with a pointer to this gate | Done (initial) - skill written; app breadth block wired (`plan-context.ts`) |
 
 ### The app (app/)
 

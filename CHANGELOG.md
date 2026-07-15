@@ -5,6 +5,17 @@ Forward Deploy is pre-1.0.
 
 ## [Unreleased]
 
+### Added
+- **Software canons + `/forward-deploy:capture-software`** (fifth gate) - one canon per vendor
+  product the company uses, at `docs/software/<slug>.md` with an `INDEX.md` breadth map (the same
+  folder-plus-index convention as department SOPs). The skill researches the vendor's public
+  developer docs from Claude Code - API surface, webhooks, auth model, tier/rate limits, docs
+  links - harvests candidates from the SOP `tools:` lists, and commits after human review. The
+  plan builder loads the index in its cached breadth block, reads a named product's canon before
+  assessing integration feasibility, and when a manager names undocumented software it records
+  the gap in open_questions and points the dev team at this gate. New env: `SOFTWARE_DOCS_PATH`
+  (default `docs/software`).
+
 ## [0.3.0] - 2026-07-15
 
 ### Added

@@ -37,3 +37,8 @@ export function sopPath(): string {
 export function companyDocsPath(): string {
   return process.env.COMPANY_DOCS_PATH ?? "docs/company";
 }
+
+/** Software canons: one doc per product the company uses (Zoom, QuickBooks, ...). */
+export function softwareDocsPath(): string {
+  return process.env.SOFTWARE_DOCS_PATH ?? "docs/software";
+}
