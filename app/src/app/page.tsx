@@ -3,7 +3,7 @@ import { inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/access";
 import { db, schema } from "@/db";
 import { listSops } from "@/lib/sops";
-import { listSoftwareCanons } from "@/lib/software";
+import { findUndocumentedTools, listSoftwareCanons } from "@/lib/software";
 import { getSourceControl, repoDescription } from "@/lib/source-control";
 
 export default async function HomePage() {
@@ -54,6 +54,7 @@ export default async function HomePage() {
     ),
     listSoftwareCanons().catch(() => []),
   ]);
+  const pendingTools = await findUndocumentedTools(software).catch(() => []);
 
   let canonify = false;
   let repoOk = true;
@@ -189,6 +190,21 @@ export default async function HomePage() {
             No software documented yet. Name your tools in SOPs, then have the
             dev team run <code>/forward-deploy:capture-software</code> - each
             product becomes a card here.
+          </p>
+        </div>
+      )}
+      {pendingTools.length > 0 && (
+        <div className="card">
+          <p className="muted" style={{ margin: 0 }}>
+            <span className="status-chip status-submitted">
+              {pendingTools.length} pending review
+            </span>{" "}
+            {pendingTools
+              .slice(0, 6)
+              .map((t) => t.tool)
+              .join(", ")}
+            {pendingTools.length > 6 && ", ..."} - named in SOPs, not yet
+            documented. <Link href="/software">See the worklist</Link>
           </p>
         </div>
       )}

@@ -1,4 +1,4 @@
-import { parseFrontmatter } from "@/lib/sops";
+import { listSopDepartments, listSops, parseFrontmatter } from "@/lib/sops";
 import { getSourceControl, softwareDocsPath } from "@/lib/source-control";
 
 export type SoftwareCanon = {
@@ -60,4 +60,52 @@ export async function readSoftwareCanon(slug: string): Promise<SoftwareCanon> {
   const path = `${softwareDocsPath()}/${slug}.md`;
   const content = await getSourceControl().readFile(path);
   return toCanon(path, content);
+}
+
+export type UndocumentedTool = {
+  /** The tool name as the SOPs spell it (most common spelling wins). */
+  tool: string;
+  /** Department slugs whose SOPs name it. */
+  departments: string[];
+};
+
+function normalizeTool(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+/**
+ * The documentation gap list: every tool named in an SOP `tools:` list with
+ * no matching software canon. Pure repo derivation - the SOPs are the signal,
+ * the canon folder is the answer, no extra state to maintain.
+ */
+export async function findUndocumentedTools(
+  canons?: SoftwareCanon[]
+): Promise<UndocumentedTool[]> {
+  const known = new Set<string>();
+  for (const c of canons ?? (await listSoftwareCanons().catch(() => []))) {
+    known.add(normalizeTool(c.software));
+    known.add(normalizeTool(c.slug));
+  }
+
+  const found = new Map<string, { tool: string; departments: Set<string> }>();
+  const departments = await listSopDepartments().catch(() => []);
+  for (const dept of departments) {
+    for (const sop of await listSops(dept).catch(() => [])) {
+      for (const tool of sop.tools) {
+        const key = normalizeTool(tool);
+        if (!key || known.has(key)) continue;
+        const entry = found.get(key) ?? { tool, departments: new Set() };
+        entry.departments.add(dept);
+        found.set(key, entry);
+      }
+    }
+  }
+
+  return [...found.values()]
+    .map((e) => ({ tool: e.tool, departments: [...e.departments].sort() }))
+    .sort(
+      (a, b) =>
+        b.departments.length - a.departments.length ||
+        a.tool.localeCompare(b.tool)
+    );
 }
