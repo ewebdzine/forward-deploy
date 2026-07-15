@@ -40,7 +40,9 @@ export default async function HomePage() {
         {departments.length ? (
           <ul>
             {departments.map((d) => (
-              <li key={d.id}>{d.name}</li>
+              <li key={d.id}>
+                <Link href={`/sops/${d.slug}`}>{d.name}</Link>
+              </li>
             ))}
           </ul>
         ) : (
@@ -76,11 +78,11 @@ export default async function HomePage() {
       </div>
 
       <div className="card">
-        <h2 style={{ marginTop: 0 }}>Coming next</h2>
+        <h2 style={{ marginTop: 0 }}>Document your department</h2>
         <p className="muted">
-          SOP builder (Phase 2) and the plan builder (Phase 3) land here - this
-          build is the Phase 1 foundation: accounts, departments, and repo
-          connectivity.
+          Write <Link href="/sops">SOPs</Link> with Claude - one per process,
+          committed to your repo. The plan builder (Phase 3) lands next and
+          draws on every SOP you write.
         </p>
       </div>
     </main>

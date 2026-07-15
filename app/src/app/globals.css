@@ -212,3 +212,88 @@ pre.file-view {
 .badge-warn {
   color: var(--danger);
 }
+
+/* SOP builder (two-column: chat left, draft right) */
+main.wide {
+  max-width: 1280px;
+}
+.sop-builder {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: 1rem;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .sop-builder {
+    grid-template-columns: 1fr;
+  }
+}
+.sop-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.sop-chat-log {
+  min-height: 320px;
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-right: 0.25rem;
+}
+.sop-msg {
+  border-radius: var(--radius);
+  padding: 0.5rem 0.7rem;
+  white-space: pre-wrap;
+  font-size: 0.93rem;
+  max-width: 92%;
+}
+.sop-msg-user {
+  background: var(--primary);
+  color: var(--primary-contrast);
+  align-self: flex-end;
+}
+.sop-msg-assistant {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  align-self: flex-start;
+}
+.sop-draft-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.7rem;
+  font-size: 0.9rem;
+}
+.sop-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+textarea.sop-markdown {
+  min-height: 420px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* rendered SOP body */
+.sop-body h2 {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25rem;
+}
+.sop-body table {
+  margin: 0.75rem 0;
+}
+.sop-body code {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.85em;
+}

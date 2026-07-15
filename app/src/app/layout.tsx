@@ -30,6 +30,7 @@ export default async function RootLayout({
               Forward Deploy
             </Link>
             <nav>
+              <Link href="/sops">SOPs</Link>
               <Link href="/repo">Repo</Link>
               {session.user.role === "admin" && <Link href="/admin">Admin</Link>}
             </nav>

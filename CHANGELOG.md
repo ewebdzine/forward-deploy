@@ -5,6 +5,20 @@ Forward Deploy is pre-1.0.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-15
+
+### Added
+- **The SOP builder (Phase 2)** - managers document their department one process at a time, with
+  as many SOPs per department as they need. A two-column drafting surface (the Document-with-Craig
+  pattern): chat with Claude on the left, the editable markdown draft on the right. One Claude turn
+  = the Messages API with an `update_sop_draft` tool on `tool_choice: auto` - Claude interviews
+  while gathering, then returns the complete regenerated document; "Apply to editor" replaces the
+  draft. System blocks are ordered for prompt caching (identity/rules -> the existing-SOP corpus,
+  cache-marked -> the live current draft, last + uncached, resent every turn). Author and revise
+  modes; "Commit to repo" writes `docs/sops/<department>/<topic>.md` to your source control with
+  an attributed commit message. SOP browse/view pages render straight from the repo. Degrades
+  gracefully when no Anthropic key is configured.
+
 ## [0.1.0] - 2026-07-14
 
 ### Added
