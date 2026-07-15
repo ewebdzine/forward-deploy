@@ -5,6 +5,15 @@ Forward Deploy is pre-1.0.
 
 ## [Unreleased]
 
+### Added
+- **Bitbucket Cloud provider** - promoted from post-v1 into v1 (the reference deployment's repo
+  lives on Bitbucket). A second `SourceControlProvider` implementation over the 2.0 REST API
+  (plain fetch, no SDK): list/read/exists via `/src`, commits via `POST /src`, workspace code
+  search with graceful degrade when it isn't enabled. Selected with `SOURCE_PROVIDER=bitbucket`;
+  auth = `BITBUCKET_EMAIL` + `BITBUCKET_API_TOKEN` (Atlassian API token), `REPO_OWNER` = the
+  workspace. Health check reports per-provider config. Kickoff detects the provider from the
+  git remote.
+
 ## [0.4.0] - 2026-07-15
 
 ### Added

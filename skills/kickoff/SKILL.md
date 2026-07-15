@@ -18,7 +18,8 @@ collected, app deployed (Vercel by default), admin + departments created, and a 
 ## How to run
 
 1. **Detect.**
-   - Confirm this is a git repo with a GitHub remote (v1 supports GitHub; Bitbucket is post-v1).
+   - Confirm this is a git repo and read the remote to detect the provider: GitHub or Bitbucket
+     (both supported; `SOURCE_PROVIDER` in the app env selects the implementation).
    - **Already set up?** If `forward-deploy.json` exists at the repo root, do NOT re-run the
      wizard - report the instance URL and offer to *reconfigure* (rotate keys, change paths,
      redeploy) instead.
@@ -30,8 +31,10 @@ collected, app deployed (Vercel by default), admin + departments created, and a 
    - **Anthropic API key** (`ANTHROPIC_API_KEY`) - powers the SOP/plan chats.
    - **Postgres** (`DATABASE_URL`) - offer Neon/Vercel Postgres free tier if they have nothing.
    - **SMTP** (`EMAIL_SERVER_*`, `EMAIL_FROM`) - magic-link login; suggest Resend/Brevo free tier.
-   - **GitHub token** (`GITHUB_TOKEN`) - repo read + contents write (SOP commits). Confirm
-     `REPO_OWNER`/`REPO_NAME`/`REPO_BRANCH` from the git remote rather than asking.
+   - **Source-control credentials** - GitHub: `GITHUB_TOKEN` (repo read + contents write).
+     Bitbucket: `BITBUCKET_EMAIL` + `BITBUCKET_API_TOKEN` (Atlassian API token, repository
+     read + write) and `SOURCE_PROVIDER=bitbucket`. Confirm `REPO_OWNER`/`REPO_NAME`/
+     `REPO_BRANCH` from the git remote rather than asking (Bitbucket: owner = workspace).
    - **Paths** - SOPs (`SOP_PATH`, default `docs/sops`) and company docs (`COMPANY_DOCS_PATH`,
      default `docs/company`).
    - **Admin email** - the first login; and the first department names/managers if they have them.

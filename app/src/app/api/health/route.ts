@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import Anthropic from "@anthropic-ai/sdk";
 import { db } from "@/db";
-import { getSourceControl, repoDescription } from "@/lib/source-control";
+import {
+  getSourceControl,
+  repoDescription,
+  sourceProviderName,
+} from "@/lib/source-control";
 
 export const dynamic = "force-dynamic";
 
@@ -21,12 +25,20 @@ async function checkDb(): Promise<Check> {
 }
 
 async function checkRepo(): Promise<Check> {
-  if (!process.env.GITHUB_TOKEN || !process.env.REPO_OWNER || !process.env.REPO_NAME) {
-    return { status: "unconfigured", detail: "GITHUB_TOKEN / REPO_OWNER / REPO_NAME" };
+  const required =
+    sourceProviderName() === "bitbucket"
+      ? ["BITBUCKET_EMAIL", "BITBUCKET_API_TOKEN", "REPO_OWNER", "REPO_NAME"]
+      : ["GITHUB_TOKEN", "REPO_OWNER", "REPO_NAME"];
+  const missing = required.filter((k) => !process.env[k]);
+  if (missing.length) {
+    return { status: "unconfigured", detail: missing.join(" / ") };
   }
   try {
     await getSourceControl().listFiles("");
-    return { status: "ok", detail: repoDescription() };
+    return {
+      status: "ok",
+      detail: `${sourceProviderName()}: ${repoDescription()}`,
+    };
   } catch (e) {
     return { status: "fail", detail: (e as Error).message };
   }
