@@ -8,6 +8,8 @@ export type SoftwareCanon = {
   vendor: string;
   captured: string;
   usedBy: string[];
+  /** Short/common names managers use in SOP tools: lists, e.g. QuickBooks, QBO. */
+  aliases: string[];
   docsUrl: string;
   content: string;
 };
@@ -32,6 +34,7 @@ function toCanon(path: string, content: string): SoftwareCanon {
     vendor: fm.vendor ?? "",
     captured: fm.captured ?? "",
     usedBy: parseList(fm.used_by),
+    aliases: parseList(fm.aliases),
     docsUrl: fm.docs ?? "",
     content,
   };
@@ -85,6 +88,7 @@ export async function findUndocumentedTools(
   for (const c of canons ?? (await listSoftwareCanons().catch(() => []))) {
     known.add(normalizeTool(c.software));
     known.add(normalizeTool(c.slug));
+    for (const alias of c.aliases) known.add(normalizeTool(alias));
   }
 
   const found = new Map<string, { tool: string; departments: Set<string> }>();

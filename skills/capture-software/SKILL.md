@@ -40,6 +40,7 @@ breadth map - the same folder-plus-index convention as the department SOPs.
    vendor: <Company>
    captured: <YYYY-MM-DD>
    used_by: [<department slugs whose SOPs list it>]
+   aliases: [<short/common names managers use in SOP tools: lists, e.g. QuickBooks, QBO>]
    docs: <developer docs home URL>
    ---
    ```
