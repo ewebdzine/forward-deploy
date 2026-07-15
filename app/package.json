@@ -1,0 +1,37 @@
+{
+  "name": "forward-deploy-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Forward Deploy web app - forward-deployed planning for every department. Deploy to Vercel or your own extranet; bring your own keys.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.57.0",
+    "@auth/drizzle-adapter": "^1.10.0",
+    "@octokit/rest": "^22.0.0",
+    "drizzle-orm": "^0.44.2",
+    "next": "^15.5.0",
+    "next-auth": "5.0.0-beta.29",
+    "nodemailer": "^6.10.1",
+    "postgres": "^3.4.7",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "@types/nodemailer": "^6.4.17",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.3"
+  }
+}
