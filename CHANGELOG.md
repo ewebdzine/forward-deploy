@@ -5,6 +5,12 @@ Forward Deploy is pre-1.0.
 
 ## [Unreleased]
 
+### Added
+- **Per-department `INDEX.md`** - every SOP commit regenerates
+  `docs/sops/<department>/INDEX.md` with one summary line per SOP (topic, tools, the "What this
+  covers" first paragraph). It is the Canonify-style breadth map: developers scan it in the repo,
+  and the Phase 3 plan builder routes through it instead of loading every SOP in full.
+
 ## [0.2.0] - 2026-07-15
 
 ### Added
