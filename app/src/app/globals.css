@@ -441,6 +441,61 @@ tr:last-child td {
   gap: 0.6rem;
 }
 
+/* toast notifications (top-right, animate in/out) */
+.toast {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 80;
+  background: var(--surface);
+  border: 1px solid var(--ok);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 0.65rem 1rem;
+  box-shadow: 0 8px 26px rgba(30, 25, 15, 0.16);
+  font-size: 0.9rem;
+  max-width: min(420px, 90vw);
+  animation: toast-in 0.28s ease;
+}
+.toast.closing {
+  animation: toast-out 0.3s ease forwards;
+}
+.toast .muted {
+  font-size: 0.8rem;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.committed-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ok);
+  border: 1px solid var(--ok);
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .typing-dots {
   display: inline-flex;
   align-items: center;

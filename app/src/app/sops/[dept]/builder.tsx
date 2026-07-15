@@ -1,10 +1,29 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { commitSop } from "../actions";
 
 type ChatTurn = { role: "user" | "assistant"; content: string };
+
+function Toast({ text, sub }: { text: string; sub?: string }) {
+  const [closing, setClosing] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setClosing(true), 4600);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div className={`toast${closing ? " closing" : ""}`}>
+      &#10003; {text}
+      {sub && (
+        <>
+          <br />
+          <span className="muted">{sub}</span>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function SopBuilder({
   departmentSlug,
@@ -25,8 +44,19 @@ export default function SopBuilder({
   const [markdown, setMarkdown] = useState(initial?.markdown ?? "");
   const [hasDraft, setHasDraft] = useState(revise);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [commitState, setCommitState] = useState<string | null>(null);
+  const [commitError, setCommitError] = useState<string | null>(null);
+  // The exact content of the last successful commit; the commit button only
+  // exists while the editor differs from it.
+  const [committed, setCommitted] = useState<{
+    slug: string;
+    markdown: string;
+    sha: string;
+  } | null>(revise ? { slug: initial!.slug, markdown: initial!.markdown, sha: "" } : null);
+  const [toast, setToast] = useState<{ text: string; sub?: string; key: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const dirty =
+    !committed || committed.markdown !== markdown || committed.slug !== topicSlug;
 
   function scrollLog() {
     requestAnimationFrame(() => {
@@ -39,7 +69,7 @@ export default function SopBuilder({
     if (!message || busy) return;
     setInput("");
     setBusy(true);
-    setCommitState(null);
+    setCommitError(null);
     const nextMessages: ChatTurn[] = [...messages, { role: "user", content: message }];
     setMessages(nextMessages);
     scrollLog();
@@ -88,13 +118,18 @@ export default function SopBuilder({
 
   async function commit() {
     setBusy(true);
-    setCommitState(null);
+    setCommitError(null);
     const result = await commitSop(departmentSlug, topicSlug, markdown);
-    setCommitState(
-      result.ok
-        ? `Committed to ${result.path} (${result.sha.slice(0, 7)})`
-        : result.error
-    );
+    if (result.ok) {
+      setCommitted({ slug: topicSlug, markdown, sha: result.sha });
+      setToast({
+        text: "Committed to the repo",
+        sub: `${result.path}${result.sha ? ` (${result.sha.slice(0, 7)})` : ""}`,
+        key: Date.now(),
+      });
+    } else {
+      setCommitError(result.error);
+    }
     setBusy(false);
   }
 
@@ -213,16 +248,25 @@ export default function SopBuilder({
           />
         </div>
         <div className="drawer-foot">
-          <button
-            type="button"
-            onClick={commit}
-            disabled={busy || !markdown.trim() || !topicSlug}
-          >
-            Commit to repo
-          </button>
-          {commitState && <span className="muted">{commitState}</span>}
+          {dirty ? (
+            <button
+              type="button"
+              onClick={commit}
+              disabled={busy || !markdown.trim() || !topicSlug}
+            >
+              Commit to repo
+            </button>
+          ) : (
+            <span className="committed-chip">
+              &#10003; Committed
+              {committed?.sha ? ` (${committed.sha.slice(0, 7)})` : ""}
+            </span>
+          )}
+          {commitError && <span className="badge-warn">{commitError}</span>}
         </div>
       </aside>
+
+      {toast && <Toast key={toast.key} text={toast.text} sub={toast.sub} />}
     </div>
   );
 }
