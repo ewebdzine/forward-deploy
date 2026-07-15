@@ -10,6 +10,8 @@ export type SoftwareCanon = {
   usedBy: string[];
   /** Short/common names managers use in SOP tools: lists, e.g. QuickBooks, QBO. */
   aliases: string[];
+  /** Direct https URL to the product's logo image ("" when not captured). */
+  logoUrl: string;
   docsUrl: string;
   content: string;
 };
@@ -35,6 +37,7 @@ function toCanon(path: string, content: string): SoftwareCanon {
     captured: fm.captured ?? "",
     usedBy: parseList(fm.used_by),
     aliases: parseList(fm.aliases),
+    logoUrl: fm.logo?.startsWith("https://") ? fm.logo : "",
     docsUrl: fm.docs ?? "",
     content,
   };

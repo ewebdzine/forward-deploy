@@ -737,6 +737,15 @@ a.tile:hover {
 .band-3 {
   background: #b8cfc0;
 }
+.band-logo {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.tile-band img {
+  max-height: 52px;
+  max-width: 65%;
+  object-fit: contain;
+}
 .tile-body {
   padding: 0.75rem 0.95rem 0.9rem;
   display: flex;

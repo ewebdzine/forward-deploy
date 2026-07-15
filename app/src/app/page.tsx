@@ -164,8 +164,16 @@ export default async function HomePage() {
         <div className="tile-grid">
           {software.map((s, i) => (
             <Link className="tile" href={`/software/${s.slug}`} key={s.slug}>
-              <div className={`tile-band band-${(i + 2) % 4}`}>
-                <span>{s.software.slice(0, 1).toUpperCase()}</span>
+              <div
+                className={`tile-band ${s.logoUrl ? "band-logo" : `band-${(i + 2) % 4}`}`}
+              >
+                {s.logoUrl ? (
+                  // Plain img: logo hosts are arbitrary vendor domains.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={s.logoUrl} alt={`${s.software} logo`} />
+                ) : (
+                  <span>{s.software.slice(0, 1).toUpperCase()}</span>
+                )}
               </div>
               <div className="tile-body">
                 <span className="tile-name">{s.software}</span>

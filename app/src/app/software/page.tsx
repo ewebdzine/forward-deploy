@@ -18,31 +18,39 @@ export default async function SoftwarePage() {
         researched by the dev team. The plan builder reads these before
         assessing integration feasibility.
       </p>
-      <div className="card">
-        {canons.length ? (
-          <table>
-            <thead>
-              <tr>
-                <th>Software</th>
-                <th>Vendor</th>
-                <th>Used by</th>
-                <th>Captured</th>
-              </tr>
-            </thead>
-            <tbody>
-              {canons.map((c) => (
-                <tr key={c.slug}>
-                  <td>
-                    <Link href={`/software/${c.slug}`}>{c.software}</Link>
-                  </td>
-                  <td className="muted">{c.vendor || "-"}</td>
-                  <td className="muted">{c.usedBy.join(", ") || "-"}</td>
-                  <td className="muted">{c.captured || "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
+      {canons.length ? (
+        <div className="tile-grid">
+          {canons.map((c, i) => (
+            <Link className="tile" href={`/software/${c.slug}`} key={c.slug}>
+              <div
+                className={`tile-band ${c.logoUrl ? "band-logo" : `band-${(i + 2) % 4}`}`}
+              >
+                {c.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={c.logoUrl} alt={`${c.software} logo`} />
+                ) : (
+                  <span>{c.software.slice(0, 1).toUpperCase()}</span>
+                )}
+              </div>
+              <div className="tile-body">
+                <span className="tile-name">{c.software}</span>
+                <span className="tile-chips">
+                  {c.vendor && <span className="tag-chip">{c.vendor}</span>}
+                  {c.usedBy.length > 0 && (
+                    <span className="tag-chip">
+                      used by {c.usedBy.join(", ")}
+                    </span>
+                  )}
+                  {c.captured && (
+                    <span className="tag-chip">captured {c.captured}</span>
+                  )}
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="card">
           <p className="muted">
             No software is documented yet ({softwareDocsPath()}/ is empty).
             Mention the tools you use in your SOPs - their <code>tools:</code>{" "}
@@ -50,8 +58,8 @@ export default async function SoftwarePage() {
             <code>/forward-deploy:capture-software</code> in Claude Code to
             research and commit a canon per product.
           </p>
-        )}
-      </div>
+        </div>
+      )}
 
       {pending.length > 0 && (
         <>

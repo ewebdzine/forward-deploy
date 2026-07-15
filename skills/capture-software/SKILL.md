@@ -29,6 +29,11 @@ breadth map - the same folder-plus-index convention as the department SOPs.
    - **Auth model** - OAuth2 / API key / service account; who'd provision it.
    - **Plans & limits that gate integration** - API only on higher tiers, rate limits, sandbox availability.
    - **Docs links** - developer home, API reference, webhooks guide, status page.
+   - **Logo** - a direct, hotlinkable https image URL (the app renders it on the software
+     cards). Prefer the vendor's official brand/press asset (SVG/PNG on their own domain or
+     CDN); verify the URL actually serves an image. Reliable fallback when no official asset
+     is found: `https://www.google.com/s2/favicons?domain=<product-domain>&sz=128`. Leave
+     empty rather than guessing a URL - the app falls back to a letter tile.
    Note the retrieval date; vendor docs drift.
 
 3. **Write the canon** at `docs/software/<slug>.md` (kebab-case product name) with frontmatter:
@@ -41,6 +46,7 @@ breadth map - the same folder-plus-index convention as the department SOPs.
    captured: <YYYY-MM-DD>
    used_by: [<department slugs whose SOPs list it>]
    aliases: [<short/common names managers use in SOP tools: lists, e.g. QuickBooks, QBO>]
+   logo: <direct https image URL for the product logo - see logo rule below>
    docs: <developer docs home URL>
    ---
    ```
