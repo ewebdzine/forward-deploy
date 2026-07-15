@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { db, schema } from "@/db";
 import { canAccessDepartment } from "@/lib/access";
 import { missingRequiredSections } from "@/lib/plan-sections";
+import { isValidDevTransition } from "@/lib/plan-status";
 
 export async function createPlan(formData: FormData) {
   const session = await auth();
@@ -63,4 +64,52 @@ export async function submitPlan(planId: string): Promise<SubmitPlanResult> {
   revalidatePath("/plans");
   revalidatePath(`/plans/${planId}`);
   return { ok: true };
+}
+
+export async function addPlanMessage(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) return;
+  const planId = String(formData.get("planId") ?? "");
+  const message = String(formData.get("body") ?? "").trim();
+  if (!planId || !message) return;
+
+  const plan = await db.query.plans.findFirst({
+    where: eq(schema.plans.id, planId),
+  });
+  if (!plan || !(await canAccessDepartment(session, plan.departmentId))) return;
+
+  await db.insert(schema.planMessages).values({
+    planId,
+    authorId: session.user.id,
+    body: message,
+  });
+  await db
+    .update(schema.plans)
+    .set({ updatedAt: new Date() })
+    .where(eq(schema.plans.id, planId));
+  revalidatePath(`/plans/${planId}`);
+  revalidatePath("/plans");
+}
+
+export async function setPlanStatus(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) return;
+  // Status advances are the dev team's side of the board.
+  if (session.user.role !== "developer" && session.user.role !== "admin") return;
+
+  const planId = String(formData.get("planId") ?? "");
+  const to = String(formData.get("status") ?? "");
+  if (!planId || !to) return;
+
+  const plan = await db.query.plans.findFirst({
+    where: eq(schema.plans.id, planId),
+  });
+  if (!plan || !isValidDevTransition(plan.status, to)) return;
+
+  await db
+    .update(schema.plans)
+    .set({ status: to as typeof plan.status, updatedAt: new Date() })
+    .where(eq(schema.plans.id, planId));
+  revalidatePath(`/plans/${planId}`);
+  revalidatePath("/plans");
 }

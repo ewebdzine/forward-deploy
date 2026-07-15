@@ -6,6 +6,8 @@ import remarkGfm from "remark-gfm";
 import { requireSession, canAccessDepartment } from "@/lib/access";
 import { db, schema } from "@/db";
 import { PLAN_SECTIONS } from "@/lib/plan-sections";
+import { devTransitionsFrom } from "@/lib/plan-status";
+import { addPlanMessage, setPlanStatus } from "../actions";
 import SubmitPlanButton from "./submit-button";
 
 export default async function PlanViewPage({
@@ -18,7 +20,12 @@ export default async function PlanViewPage({
 
   const plan = await db.query.plans.findFirst({
     where: eq(schema.plans.id, id),
-    with: { department: true, author: true, mockups: true },
+    with: {
+      department: true,
+      author: true,
+      mockups: true,
+      messages: { with: { author: true } },
+    },
   });
   if (!plan) notFound();
   if (!(await canAccessDepartment(session, plan.departmentId))) {
@@ -27,6 +34,12 @@ export default async function PlanViewPage({
 
   const editable =
     plan.status === "draft" || plan.status === "changes_requested";
+  const isDev =
+    session.user.role === "developer" || session.user.role === "admin";
+  const transitions = isDev ? devTransitionsFrom(plan.status) : [];
+  const thread = plan.messages.sort(
+    (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+  );
 
   return (
     <main>
@@ -91,6 +104,60 @@ export default async function PlanViewPage({
       )}
 
       {editable && <SubmitPlanButton planId={plan.id} />}
+
+      {plan.status !== "draft" && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Review thread</h2>
+          {thread.length ? (
+            <div className="thread">
+              {thread.map((m) => (
+                <div key={m.id} className="thread-msg">
+                  <div className="muted">
+                    <strong>{m.author.name ?? m.author.email}</strong>{" "}
+                    <span className="role-chip">{m.author.role}</span>{" "}
+                    {m.createdAt.toISOString().slice(0, 16).replace("T", " ")}
+                  </div>
+                  <p style={{ margin: "0.25rem 0 0", whiteSpace: "pre-wrap" }}>
+                    {m.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="muted">No messages yet.</p>
+          )}
+          <form action={addPlanMessage} className="stack" style={{ marginTop: "0.75rem" }}>
+            <input type="hidden" name="planId" value={plan.id} />
+            <textarea
+              name="body"
+              rows={3}
+              required
+              placeholder="Reply to the thread..."
+            />
+            <button type="submit">Post reply</button>
+          </form>
+        </div>
+      )}
+
+      {transitions.length > 0 && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Dev team: advance status</h2>
+          <form action={setPlanStatus} className="row">
+            <input type="hidden" name="planId" value={plan.id} />
+            <select name="status" defaultValue={transitions[0]}>
+              {transitions.map((t) => (
+                <option key={t} value={t}>
+                  {t.replace(/_/g, " ")}
+                </option>
+              ))}
+            </select>
+            <button type="submit">Set status</button>
+          </form>
+          <p className="muted" style={{ marginBottom: 0 }}>
+            The manager sees the change immediately; use the thread to say why.
+          </p>
+        </div>
+      )}
     </main>
   );
 }

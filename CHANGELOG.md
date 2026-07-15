@@ -5,7 +5,22 @@ Forward Deploy is pre-1.0.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-15
+
 ### Added
+- **The dev review loop (Phase 4)** - submitted plans land in a filterable queue on /plans; the
+  plan page grows a manager <-> developer review thread and (for developers/admins) validated
+  status controls over the full workflow `submitted -> in_review -> changes_requested / approved
+  -> in_development -> shipped` (+ `declined`, with re-open). Managers submit and converse; only
+  the dev team advances status.
+- **The plans API** - token-authed REST (Bearer `FORWARD_DEPLOY_TOKEN`, timing-safe compare) that
+  `/forward-deploy:review-plans` and `:pull-plan` consume: list the queue, fetch a full plan
+  (sections, citations, mockup HTML, thread), post thread replies (attributed via `authorEmail`
+  when it matches an invited user, else a "Dev team (Claude Code)" system user), and make
+  validated status transitions. **This completes the v1 core loop end-to-end** - manager's idea
+  to developer's editor; what remains for v1 is the live-deploy shakedown (SPEC section 4).
+
+### Added (0.3.x line)
 - **Software canons + `/forward-deploy:capture-software`** (fifth gate) - one canon per vendor
   product the company uses, at `docs/software/<slug>.md` with an `INDEX.md` breadth map (the same
   folder-plus-index convention as department SOPs). The skill researches the vendor's public

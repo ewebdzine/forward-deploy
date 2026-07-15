@@ -1,6 +1,6 @@
 {
   "name": "forward-deploy-app",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "The Forward Deploy web app - forward-deployed planning for every department. Deploy to Vercel or your own extranet; bring your own keys.",
   "license": "MIT",

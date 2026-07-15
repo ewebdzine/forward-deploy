@@ -5,8 +5,22 @@ import { db, schema } from "@/db";
 
 export const metadata = { title: "Plans - Forward Deploy" };
 
-export default async function PlansPage() {
+const FILTERS = [
+  { key: "", label: "all" },
+  { key: "queue", label: "review queue" },
+  { key: "in_development", label: "in development" },
+  { key: "shipped", label: "shipped" },
+] as const;
+
+const QUEUE_STATUSES = ["submitted", "in_review", "changes_requested"] as const;
+
+export default async function PlansPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string }>;
+}) {
   const session = await requireSession();
+  const { filter = "" } = await searchParams;
 
   let plans;
   if (session.user.role === "manager") {
@@ -30,12 +44,31 @@ export default async function PlansPage() {
     });
   }
 
+  if (filter === "queue") {
+    plans = plans.filter((p) =>
+      (QUEUE_STATUSES as readonly string[]).includes(p.status)
+    );
+  } else if (filter) {
+    plans = plans.filter((p) => p.status === filter);
+  }
+
   return (
     <main>
       <h1>Plans</h1>
       <p className="muted">
         Developer-ready proposals, built with Claude from your SOPs, canons,
         and codebase. <Link href="/plans/new">+ New plan</Link>
+      </p>
+      <p className="muted">
+        {FILTERS.map((f) => (
+          <Link
+            key={f.key}
+            href={f.key ? `/plans?filter=${f.key}` : "/plans"}
+            style={{ marginRight: "0.75rem", fontWeight: filter === f.key ? 700 : 400 }}
+          >
+            {f.label}
+          </Link>
+        ))}
       </p>
       <div className="card">
         {plans.length ? (
