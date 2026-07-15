@@ -22,6 +22,28 @@ type SopChatRequest = {
   revisePath?: string;
 };
 
+const SET_SOP_TITLE_TOOL: Anthropic.Tool = {
+  name: "set_sop_title",
+  description:
+    "Set (or update) the SOP's working title and filename slug as soon as you understand what " +
+    "process is being documented - typically from the manager's FIRST message, well before any " +
+    "draft. Call it again if the conversation narrows or changes the focus.",
+  input_schema: {
+    type: "object",
+    properties: {
+      title: {
+        type: "string",
+        description: "Human-readable SOP title, e.g. 'QuickBooks invoicing'",
+      },
+      topic_slug: {
+        type: "string",
+        description: "kebab-case filename slug, e.g. 'quickbooks-invoicing'",
+      },
+    },
+    required: ["title", "topic_slug"],
+  },
+};
+
 const UPDATE_SOP_DRAFT_TOOL: Anthropic.Tool = {
   name: "update_sop_draft",
   description:
@@ -61,6 +83,7 @@ function identityBlock(
   return `You are the SOP drafting assistant in Forward Deploy, working with a department manager to document their department. You interview them about one process at a time, then draft it as a Standard Operating Procedure.
 
 Rules:
+- Name it immediately: on your first reply, call set_sop_title with a working title based on what the manager described - before any drafting. Update it if the focus changes.
 - Interview first, write second. Ask the questions a good analyst would; don't draft from a one-line description. Once you have the essentials, call update_sop_draft and keep refining it each turn.
 - One SOP documents ONE process, tool, or recurring workflow. Several small SOPs beat one giant one. If the manager describes multiple distinct processes, say so, help them pick one to document now, and note the others as follow-ups.
 - The document must follow this exact structure - YAML frontmatter, then these sections:
@@ -168,16 +191,73 @@ export async function POST(req: Request) {
     .map((t) => ({ role: t.role, content: String(t.content) }));
 
   const client = new Anthropic();
-  let response: Anthropic.Message;
+  const messages: Anthropic.MessageParam[] = [
+    ...history,
+    { role: "user", content: body.message },
+  ];
+
+  let reply = "";
+  let draft: { title: string; topic_slug: string; markdown: string } | null =
+    null;
+  let titleUpdate: { title: string; topic_slug: string } | null = null;
+
+  // Small tool loop (title + draft are metadata tools, not exploration) so
+  // Claude can set the title on its first reply and keep talking.
   try {
-    response = await client.messages.create({
-      model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5",
-      max_tokens: 8192,
-      system,
-      messages: [...history, { role: "user", content: body.message }],
-      tools: [UPDATE_SOP_DRAFT_TOOL],
-      tool_choice: { type: "auto" },
-    });
+    for (let round = 0; round < 4; round++) {
+      const response = await client.messages.create({
+        model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5",
+        max_tokens: 8192,
+        system,
+        messages,
+        tools: [SET_SOP_TITLE_TOOL, UPDATE_SOP_DRAFT_TOOL],
+        tool_choice: { type: "auto" },
+      });
+
+      const text = response.content
+        .filter((b): b is Anthropic.TextBlock => b.type === "text")
+        .map((b) => b.text)
+        .join("\n")
+        .trim();
+      if (text) reply = reply ? `${reply}\n\n${text}` : text;
+
+      const toolUses = response.content.filter(
+        (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
+      );
+      if (response.stop_reason !== "tool_use" || !toolUses.length) break;
+
+      messages.push({ role: "assistant", content: response.content });
+      const results: Anthropic.ToolResultBlockParam[] = [];
+      for (const use of toolUses) {
+        if (use.name === "set_sop_title") {
+          titleUpdate = use.input as { title: string; topic_slug: string };
+          results.push({
+            type: "tool_result",
+            tool_use_id: use.id,
+            content: "Title set.",
+          });
+        } else if (use.name === "update_sop_draft") {
+          draft = use.input as {
+            title: string;
+            topic_slug: string;
+            markdown: string;
+          };
+          results.push({
+            type: "tool_result",
+            tool_use_id: use.id,
+            content: "Draft applied to the editor.",
+          });
+        } else {
+          results.push({
+            type: "tool_result",
+            tool_use_id: use.id,
+            content: `Unknown tool: ${use.name}`,
+            is_error: true,
+          });
+        }
+      }
+      messages.push({ role: "user", content: results });
+    }
   } catch (e) {
     return NextResponse.json(
       { error: `Claude call failed: ${(e as Error).message}` },
@@ -185,25 +265,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const reply = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("\n")
-    .trim();
-  const toolUse = response.content.find(
-    (b): b is Anthropic.ToolUseBlock =>
-      b.type === "tool_use" && b.name === "update_sop_draft"
-  );
-  const draft = toolUse
-    ? (toolUse.input as { title: string; topic_slug: string; markdown: string })
-    : null;
-
   return NextResponse.json({
-    reply: reply || (draft ? "I've updated the draft - take a look on the right." : ""),
+    reply:
+      reply || (draft ? "I've updated the draft - take a look." : ""),
     draft,
-    tokens: {
-      input: response.usage.input_tokens,
-      output: response.usage.output_tokens,
-    },
+    titleUpdate,
   });
 }

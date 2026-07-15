@@ -27,9 +27,16 @@ export default async function HomePage() {
     repoOk = false;
   }
 
+  const hour = new Date().getHours();
+  const daypart = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
+  const firstName = (session.user.name ?? "").split(" ")[0];
+
   return (
     <main>
-      <h1>Welcome{session.user.name ? `, ${session.user.name}` : ""}</h1>
+      <h1>
+        Good {daypart}
+        {firstName ? `, ${firstName}` : ""}
+      </h1>
       <p className="muted">
         Document your department, then turn its inefficiencies into
         developer-ready plans.

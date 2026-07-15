@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { auth, signOut } from "@/auth";
+import SidebarNav from "@/components/sidebar-nav";
+import ThemeToggle from "@/components/theme-toggle";
 import "./globals.css";
+
+// Applies a stored explicit theme before first paint (no flash).
+const THEME_SCRIPT = `try{var t=localStorage.getItem("fd-theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}`;
 
 export const metadata: Metadata = {
   title: "Forward Deploy",
@@ -21,34 +25,44 @@ export default async function RootLayout({
     await signOut({ redirectTo: "/signin" });
   }
 
+  if (!session?.user) {
+    return (
+      <html lang="en">
+        <head>
+          <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        </head>
+        <body>{children}</body>
+      </html>
+    );
+  }
+
   return (
     <html lang="en">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>
-        {session?.user ? (
-          <header className="topbar">
-            <Link href="/" className="brand">
+        <div className="shell">
+          <aside className="sidebar">
+            <a className="brand" href="/">
               Forward Deploy
-            </Link>
-            <nav>
-              <Link href="/sops">SOPs</Link>
-              <Link href="/plans">Plans</Link>
-              <Link href="/repo">Repo</Link>
-              {session.user.role === "admin" && <Link href="/admin">Admin</Link>}
-            </nav>
-            <div className="topbar-user">
-              <span className="muted">
+            </a>
+            <SidebarNav isAdmin={session.user.role === "admin"} />
+            <div className="sidebar-user">
+              <span>
                 {session.user.name ?? session.user.email}{" "}
                 <span className="role-chip">{session.user.role}</span>
               </span>
+              <ThemeToggle />
               <form action={doSignOut}>
                 <button type="submit" className="link-button">
                   Sign out
                 </button>
               </form>
             </div>
-          </header>
-        ) : null}
-        {children}
+          </aside>
+          <div className="content">{children}</div>
+        </div>
       </body>
     </html>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { commitSop } from "../actions";
 
 type ChatTurn = { role: "user" | "assistant"; content: string };
@@ -22,17 +23,14 @@ export default function SopBuilder({
   const [title, setTitle] = useState(initial?.title ?? "");
   const [topicSlug, setTopicSlug] = useState(initial?.slug ?? "");
   const [markdown, setMarkdown] = useState(initial?.markdown ?? "");
-  const [pending, setPending] = useState<{
-    title: string;
-    topic_slug: string;
-    markdown: string;
-  } | null>(null);
+  const [hasDraft, setHasDraft] = useState(revise);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [commitState, setCommitState] = useState<string | null>(null);
-  const logRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   function scrollLog() {
     requestAnimationFrame(() => {
-      logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
     });
   }
 
@@ -53,7 +51,7 @@ export default function SopBuilder({
         body: JSON.stringify({
           departmentSlug,
           message,
-          history: messages, // chat text only - the draft rides in its own field
+          history: messages,
           draft: { title, markdown },
           revisePath: initial?.path,
         }),
@@ -64,7 +62,19 @@ export default function SopBuilder({
         ...nextMessages,
         { role: "assistant", content: data.reply || "(updated the draft)" },
       ]);
-      if (data.draft) setPending(data.draft);
+      if (data.titleUpdate) {
+        // Claude names the SOP from the first description, before any draft.
+        setTitle(data.titleUpdate.title);
+        if (!revise && !hasDraft) setTopicSlug(data.titleUpdate.topic_slug);
+      }
+      if (data.draft) {
+        // The draft slides in over the page, already applied.
+        setTitle(data.draft.title);
+        if (!revise) setTopicSlug(data.draft.topic_slug);
+        setMarkdown(data.draft.markdown);
+        setHasDraft(true);
+        setDrawerOpen(true);
+      }
     } catch (e) {
       setMessages([
         ...nextMessages,
@@ -74,14 +84,6 @@ export default function SopBuilder({
       setBusy(false);
       scrollLog();
     }
-  }
-
-  function applyPending() {
-    if (!pending) return;
-    setTitle(pending.title);
-    if (!revise) setTopicSlug(pending.topic_slug);
-    setMarkdown(pending.markdown);
-    setPending(null);
   }
 
   async function commit() {
@@ -97,88 +99,122 @@ export default function SopBuilder({
   }
 
   return (
-    <div className="sop-builder">
-      <section className="card sop-chat">
-        <h2 style={{ marginTop: 0 }}>
-          {revise ? "Revise with Claude" : "Draft with Claude"}
-        </h2>
-        <div className="sop-chat-log" ref={logRef}>
-          {messages.length === 0 && (
-            <p className="muted">
-              {revise
-                ? "Tell me what should change in this SOP - a step that moved, a new tool, a pain point worth adding."
-                : "Describe a process your department runs - I'll ask questions, then draft the SOP on the right. One process per SOP; we can do several in a row."}
-            </p>
-          )}
+    <div className="chat-page">
+      <div className="chat-title">
+        <p className="muted" style={{ margin: 0 }}>
+          <Link href={`/sops/${departmentSlug}`}>&larr; {departmentName} SOPs</Link>
+        </p>
+        <h1>
+          {revise ? `Revise: ${initial!.title}` : title || "New SOP"}
+        </h1>
+        <p className="muted" style={{ margin: 0 }}>
+          {revise
+            ? "Tell me what should change - the updated draft slides in from the right."
+            : "Describe a process your department runs. I'll ask questions; when I have enough, the draft slides in from the right. One process per SOP."}
+        </p>
+      </div>
+
+      <div className="chat-scroll" ref={scrollRef}>
+        <div className="chat-inner">
           {messages.map((m, i) => (
-            <div key={i} className={`sop-msg sop-msg-${m.role}`}>
+            <div key={i} className={`msg msg-${m.role}`}>
               {m.content}
             </div>
           ))}
-          {busy && <div className="sop-msg sop-msg-assistant muted">thinking...</div>}
+          {busy && <div className="msg msg-assistant muted">thinking...</div>}
         </div>
-        {pending && (
-          <div className="sop-draft-bar">
-            <span>
-              Draft ready: <strong>{pending.title}</strong>
-            </span>
-            <button type="button" onClick={applyPending}>
-              Apply to editor
+      </div>
+
+      <div className="composer">
+        <div className="composer-inner">
+          <textarea
+            value={input}
+            placeholder="Describe the process... (Enter to send, Shift+Enter for a new line)"
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                send();
+              }
+            }}
+            disabled={busy}
+          />
+          <div className="composer-foot">
+            {hasDraft ? (
+              <button
+                type="button"
+                className="draft-chip"
+                onClick={() => setDrawerOpen(true)}
+              >
+                &#128196; {title || "SOP draft"} - view
+              </button>
+            ) : (
+              <span className="muted" style={{ fontSize: "0.82rem" }}>
+                {title ? `${departmentName} / ${title}` : departmentName}
+              </span>
+            )}
+            <button type="button" onClick={send} disabled={busy || !input.trim()}>
+              Send
             </button>
           </div>
-        )}
-        <textarea
-          rows={3}
-          value={input}
-          placeholder="Type and press Enter to send (Shift+Enter for a new line)"
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              send();
-            }
-          }}
-          disabled={busy}
-        />
-      </section>
-
-      <section className="card sop-editor">
-        <h2 style={{ marginTop: 0 }}>SOP draft</h2>
-        <div className="row">
-          <div className="stack" style={{ flex: 1 }}>
-            <label htmlFor="sopTitle">Title</label>
-            <input
-              id="sopTitle"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. QuickBooks invoicing"
-            />
-          </div>
-          <div className="stack">
-            <label htmlFor="sopSlug">Filename</label>
-            <input
-              id="sopSlug"
-              value={topicSlug}
-              onChange={(e) => setTopicSlug(e.target.value)}
-              placeholder="quickbooks-invoicing"
-              disabled={revise}
-            />
-          </div>
         </div>
-        <textarea
-          className="sop-markdown"
-          value={markdown}
-          onChange={(e) => setMarkdown(e.target.value)}
-          placeholder={`---\ndepartment: ${departmentName}\n...\n---\n\n## What this covers\n...`}
-          spellCheck={false}
-        />
-        <div className="row">
-          <button type="button" onClick={commit} disabled={busy || !markdown.trim() || !topicSlug}>
+      </div>
+
+      <div
+        className={`drawer-overlay${drawerOpen ? " open" : ""}`}
+        onClick={() => setDrawerOpen(false)}
+      />
+      <aside className={`drawer${drawerOpen ? " open" : ""}`} aria-hidden={!drawerOpen}>
+        <div className="drawer-head">
+          <h2>SOP draft</h2>
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => setDrawerOpen(false)}
+          >
+            Close
+          </button>
+        </div>
+        <div className="drawer-body">
+          <div className="row">
+            <div className="stack" style={{ flex: 1 }}>
+              <label htmlFor="sopTitle">Title</label>
+              <input
+                id="sopTitle"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. QuickBooks invoicing"
+              />
+            </div>
+            <div className="stack">
+              <label htmlFor="sopSlug">Filename</label>
+              <input
+                id="sopSlug"
+                value={topicSlug}
+                onChange={(e) => setTopicSlug(e.target.value)}
+                placeholder="quickbooks-invoicing"
+                disabled={revise}
+              />
+            </div>
+          </div>
+          <textarea
+            className="sop-markdown"
+            value={markdown}
+            onChange={(e) => setMarkdown(e.target.value)}
+            spellCheck={false}
+          />
+        </div>
+        <div className="drawer-foot">
+          <button
+            type="button"
+            onClick={commit}
+            disabled={busy || !markdown.trim() || !topicSlug}
+          >
             Commit to repo
           </button>
           {commitState && <span className="muted">{commitState}</span>}
         </div>
-      </section>
+      </aside>
     </div>
   );
 }

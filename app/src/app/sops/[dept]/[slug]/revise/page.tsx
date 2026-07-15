@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { canAccessDepartment, findDepartment, requireSession } from "@/lib/access";
 import { readSop } from "@/lib/sops";
@@ -26,24 +25,15 @@ export default async function ReviseSopPage({
   }
 
   return (
-    <main className="wide">
-      <h1>
-        {department.name} - revise: {sop.topic}
-      </h1>
-      <p className="muted">
-        <Link href={`/sops/${department.slug}/${slug}`}>&larr; back to the SOP</Link>
-        {" - "}committing replaces the file in the repo (git keeps the history).
-      </p>
-      <SopBuilder
-        departmentSlug={department.slug}
-        departmentName={department.name}
-        initial={{
-          path: sop.path,
-          slug: sop.slug,
-          title: sop.topic,
-          markdown: sop.content,
-        }}
-      />
-    </main>
+    <SopBuilder
+      departmentSlug={department.slug}
+      departmentName={department.name}
+      initial={{
+        path: sop.path,
+        slug: sop.slug,
+        title: sop.topic,
+        markdown: sop.content,
+      }}
+    />
   );
 }
