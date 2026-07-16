@@ -170,28 +170,48 @@ export default function PlanBuilder({
             <div className="oq-card">
               <div className="oq-head">
                 Open questions on this plan ({openQuestions.length})
-                <button
-                  type="button"
-                  className="link-button"
-                  onClick={() =>
-                    send(
-                      "Let's work through the open questions on this plan - ask me the most important one first, one at a time."
-                    )
-                  }
-                >
-                  Work through them
-                </button>
+                {managerQs > 0 && (
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    onClick={() =>
+                      send(
+                        "Let's work through the open questions on this plan - ask me the most important one first, one at a time."
+                      )
+                    }
+                  >
+                    Work through them
+                  </button>
+                )}
               </div>
+              {devQs > 0 && (
+                <p className="oq-explainer">
+                  <span className="tag-chip oq-chip-dev">dev team</span> items
+                  in yellow are implementation details the developers will
+                  settle during review - you don't need to answer them.
+                  {managerQs > 0 && (
+                    <>
+                      {" "}
+                      <span className="tag-chip oq-chip-you">for you</span>{" "}
+                      items in orange are waiting on your answer.
+                    </>
+                  )}
+                </p>
+              )}
               <div className="oq-list">
-                {openQuestions.map((q) => (
+                {[...openQuestions]
+                  .sort((a, b) =>
+                    a.audience === b.audience ? 0 : a.audience === "manager" ? -1 : 1
+                  )
+                  .map((q) => (
                   <div
-                    className={`oq-qcard${q.audience === "dev" ? " oq-dev" : ""}`}
+                    className={`oq-qcard ${q.audience === "dev" ? "oq-dev" : "oq-you"}`}
                     key={q.text}
                   >
                     <p className="oq-question">
                       {q.text}{" "}
                       {q.audience === "dev" ? (
-                        <span className="tag-chip">dev team</span>
+                        <span className="tag-chip oq-chip-dev">dev team</span>
                       ) : (
                         <span className="tag-chip oq-chip-you">for you</span>
                       )}

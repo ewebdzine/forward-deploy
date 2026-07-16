@@ -504,14 +504,39 @@ tr:last-child td {
   flex-direction: column;
   gap: 0.55rem;
 }
+.oq-explainer {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 0 0 0.6rem;
+  line-height: 1.7;
+}
 .oq-qcard {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 0.6rem 0.75rem;
 }
+.oq-qcard.oq-you {
+  border-left: 3px solid var(--accent);
+}
 .oq-qcard.oq-dev {
-  opacity: 0.75;
+  border-left: 3px solid #d4a72c;
+}
+.oq-qcard.oq-dev .oq-question::before {
+  color: #d4a72c;
+}
+.oq-chip-dev {
+  color: #8a6d1d;
+  border-color: #d4a72c;
+  background: rgba(212, 167, 44, 0.14);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .oq-chip-dev {
+    color: #e5c35e;
+  }
+}
+:root[data-theme="dark"] .oq-chip-dev {
+  color: #e5c35e;
 }
 .oq-question {
   margin: 0 0 0.45rem;
