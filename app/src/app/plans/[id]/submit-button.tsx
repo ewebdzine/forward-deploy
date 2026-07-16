@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { submitPlan } from "../actions";
 
-export default function SubmitPlanButton({ planId }: { planId: string }) {
+export default function SubmitPlanButton({
+  planId,
+  compact = false,
+}: {
+  planId: string;
+  compact?: boolean;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const router = useRouter();
@@ -20,6 +26,17 @@ export default function SubmitPlanButton({ planId }: { planId: string }) {
       setError(result.error);
     }
     setBusy(false);
+  }
+
+  if (compact) {
+    return (
+      <span className="row">
+        <button type="button" className="ready-cta" onClick={submit} disabled={busy}>
+          Submit to the dev team
+        </button>
+        {error && <span className="badge-warn">{error}</span>}
+      </span>
+    );
   }
 
   return (

@@ -1099,6 +1099,19 @@ a.tile:hover {
 .action-card-warn {
   border-color: #c07d0b;
 }
+.action-card-ready {
+  border-color: var(--ok);
+  background: linear-gradient(
+    135deg,
+    rgba(55, 132, 94, 0.1),
+    rgba(55, 132, 94, 0.02)
+  );
+}
+.ready-cta {
+  background: var(--ok);
+  border: 1px solid var(--ok);
+  color: #fff;
+}
 
 /* question-progress bar (bootstrap-style animated stripes while in progress) */
 .progress {

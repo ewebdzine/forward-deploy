@@ -77,11 +77,21 @@ export default async function PlanViewPage({
               Continue building
             </Link>
           </div>
-          <div className={`card action-card${forManager > 0 ? " action-card-warn" : ""}`}>
+          <div
+            className={`card action-card${forManager > 0 ? " action-card-warn" : ""}${
+              forManager === 0 && totalQuestions > 0 ? " action-card-ready" : ""
+            }`}
+          >
             <h2 style={{ marginTop: 0 }}>
-              {openQuestions.length
-                ? `${openQuestions.length} open question${openQuestions.length === 1 ? "" : "s"}`
-                : "No open questions"}
+              {forManager === 0 && totalQuestions > 0 ? (
+                <span className="ready-title" style={{ fontSize: "1.05rem" }}>
+                  &#10003; Ready for the dev team
+                </span>
+              ) : openQuestions.length ? (
+                `${openQuestions.length} open question${openQuestions.length === 1 ? "" : "s"}`
+              ) : (
+                "No open questions"
+              )}
             </h2>
             <p className="muted">
               {openQuestions.length === 0 &&
@@ -96,14 +106,18 @@ export default async function PlanViewPage({
                 </>
               )}
               {openQuestions.length > 0 && forManager === 0 && (
-                <>All {forDev} are flagged for the dev team to decide.</>
+                <>
+                  Every question for you is answered - the {forDev} open item
+                  {forDev === 1 ? "" : "s"} are the developers&apos; to settle
+                  during review.
+                </>
               )}
             </p>
             {totalQuestions > 0 && (
               <>
                 <div className="progress" title={`${plan.resolvedQuestions} of ${totalQuestions} answered`}>
                   <div
-                    className={`progress-bar${openQuestions.length > 0 ? " striped" : ""}`}
+                    className={`progress-bar${forManager > 0 ? " striped" : ""}`}
                     style={{ width: `${answeredPct}%` }}
                   />
                 </div>
@@ -112,10 +126,12 @@ export default async function PlanViewPage({
                 </p>
               </>
             )}
-            {forManager > 0 && (
+            {forManager > 0 ? (
               <Link className="button-secondary" href={`/plans/${plan.id}/build`}>
                 Continue answering questions
               </Link>
+            ) : (
+              totalQuestions > 0 && <SubmitPlanButton planId={plan.id} compact />
             )}
           </div>
         </div>
