@@ -306,6 +306,7 @@ export async function POST(req: Request) {
         const client = new Anthropic();
         const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
         let reply = "";
+        let didUpdatePlan = false;
 
         // captureReply=false runs a silent repair round (tools only, text discarded).
         const runRounds = async (maxRounds: number, captureReply: boolean) => {
@@ -343,6 +344,7 @@ export async function POST(req: Request) {
             for (const use of toolUses) {
               const input = use.input as Record<string, unknown>;
               send({ type: "activity", ...describeTool(use.name, input) });
+              if (use.name === "update_plan") didUpdatePlan = true;
               let result: string;
               let isError = false;
               try {
@@ -364,9 +366,21 @@ export async function POST(req: Request) {
 
         await runRounds(MAX_TOOL_ROUNDS, true);
 
-        // Drift guard: if this turn answered a specific open question but the
-        // document still lists it, force a silent repair round so the section
-        // matches what was said in chat. Prompts alone proved insufficient.
+        // Drift guard 1 (general): a turn that touched the conversation but
+        // never called update_plan gets one silent chance to sync the document
+        // with whatever it just said. Prompts alone proved insufficient.
+        if (!didUpdatePlan) {
+          send({ type: "activity", kind: "plan", label: "Checking the plan document is in sync" });
+          messages.push({
+            role: "user",
+            content:
+              "SYSTEM CHECK: you made no update_plan call this turn. If this exchange resolved, reclassified, or raised any open question - or changed anything the plan document should reflect - call update_plan NOW to sync it (open_questions must list only currently-open bullets, with '(dev team)' markers where the developers own the answer). If truly nothing changed, reply 'no changes'.",
+          });
+          await runRounds(3, false);
+        }
+
+        // Drift guard 2 (targeted): a card-answered question must actually
+        // leave the document.
         const answeredMatch = body.message.match(
           /^Answering this open question: "([\s\S]+?)"/
         );
