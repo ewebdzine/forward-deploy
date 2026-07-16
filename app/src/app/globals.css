@@ -499,25 +499,43 @@ tr:last-child td {
   flex-direction: column;
   gap: 0.15rem;
 }
-.oq-item {
-  background: none;
-  border: none;
-  color: var(--text);
-  padding: 0.25rem 0.25rem;
-  font: inherit;
-  font-size: 0.88rem;
-  text-align: left;
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  width: 100%;
+.oq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
 }
-.oq-item::before {
+.oq-qcard {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.75rem;
+}
+.oq-qcard.oq-dev {
+  opacity: 0.75;
+}
+.oq-question {
+  margin: 0 0 0.45rem;
+  font-size: 0.88rem;
+}
+.oq-question::before {
   content: "\2610  ";
   color: var(--accent);
 }
-.oq-item:hover {
-  background: var(--surface-2);
-  opacity: 1;
+.oq-reply {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-end;
+}
+.oq-reply textarea {
+  flex: 1;
+  font-size: 0.86rem;
+  padding: 0.4rem 0.6rem;
+  resize: none;
+  background: var(--surface);
+}
+.oq-reply .button-secondary {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.8rem;
 }
 
 /* live exploration feed under the typing dots */

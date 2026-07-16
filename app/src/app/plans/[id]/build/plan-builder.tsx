@@ -41,6 +41,7 @@ export default function PlanBuilder({
   const [plan, setPlan] = useState<PlanState>(initial);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [replies, setReplies] = useState<Record<string, string>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function scrollLog() {
@@ -126,6 +127,13 @@ export default function PlanBuilder({
   const filled = filledCount(plan.sections);
   const openQuestions = parseOpenQuestionsDetailed(plan.sections);
 
+  function answerQuestion(question: string) {
+    const reply = (replies[question] ?? "").trim();
+    if (!reply || busy) return;
+    setReplies((r) => ({ ...r, [question]: "" }));
+    send(`Answering this open question: "${question}"\n\nMy answer: ${reply}`);
+  }
+
   return (
     <div className="chat-page">
       <div className="chat-title">
@@ -158,26 +166,52 @@ export default function PlanBuilder({
                   Work through them
                 </button>
               </div>
-              <ul>
+              <div className="oq-list">
                 {openQuestions.map((q) => (
-                  <li key={q.text}>
-                    <button
-                      type="button"
-                      className="oq-item"
-                      onClick={() =>
-                        send(`Let's answer this open question: ${q.text}`)
-                      }
-                    >
+                  <div
+                    className={`oq-qcard${q.audience === "dev" ? " oq-dev" : ""}`}
+                    key={q.text}
+                  >
+                    <p className="oq-question">
                       {q.text}
                       {q.audience === "dev" && (
                         <span className="tag-chip" style={{ marginLeft: 6 }}>
                           dev team
                         </span>
                       )}
-                    </button>
-                  </li>
+                    </p>
+                    <div className="oq-reply">
+                      <textarea
+                        rows={1}
+                        value={replies[q.text] ?? ""}
+                        placeholder={
+                          q.audience === "dev"
+                            ? "For the dev team - add input only if you have it..."
+                            : "Type your answer... (Enter to send)"
+                        }
+                        onChange={(e) =>
+                          setReplies((r) => ({ ...r, [q.text]: e.target.value }))
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            answerQuestion(q.text);
+                          }
+                        }}
+                        disabled={busy}
+                      />
+                      <button
+                        type="button"
+                        className="button-secondary"
+                        onClick={() => answerQuestion(q.text)}
+                        disabled={busy || !(replies[q.text] ?? "").trim()}
+                      >
+                        Reply
+                      </button>
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           )}
           {messages.map((m, i) =>
