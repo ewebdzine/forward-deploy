@@ -189,9 +189,12 @@ export default function PlanBuilder({
                             ? "For the dev team - add input only if you have it..."
                             : "Type your answer... (Enter to send)"
                         }
-                        onChange={(e) =>
-                          setReplies((r) => ({ ...r, [q.text]: e.target.value }))
-                        }
+                        onChange={(e) => {
+                          setReplies((r) => ({ ...r, [q.text]: e.target.value }));
+                          // Grow with the content (capped by CSS max-height).
+                          e.target.style.height = "auto";
+                          e.target.style.height = `${e.target.scrollHeight}px`;
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();

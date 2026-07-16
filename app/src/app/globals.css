@@ -532,6 +532,9 @@ tr:last-child td {
   padding: 0.4rem 0.6rem;
   resize: none;
   background: var(--surface);
+  overflow-y: auto;
+  max-height: 9.5rem; /* ~6 lines, then scrolls */
+  line-height: 1.45;
 }
 .oq-reply .button-secondary {
   padding: 0.3rem 0.8rem;
