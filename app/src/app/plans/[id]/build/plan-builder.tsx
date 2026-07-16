@@ -173,11 +173,11 @@ export default function PlanBuilder({
                     key={q.text}
                   >
                     <p className="oq-question">
-                      {q.text}
-                      {q.audience === "dev" && (
-                        <span className="tag-chip" style={{ marginLeft: 6 }}>
-                          dev team
-                        </span>
+                      {q.text}{" "}
+                      {q.audience === "dev" ? (
+                        <span className="tag-chip">dev team</span>
+                      ) : (
+                        <span className="tag-chip oq-chip-you">for you</span>
                       )}
                     </p>
                     <div className="oq-reply">

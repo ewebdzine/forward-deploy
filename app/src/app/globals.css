@@ -521,6 +521,11 @@ tr:last-child td {
   content: "\2610  ";
   color: var(--accent);
 }
+.oq-chip-you {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
 .oq-reply {
   display: flex;
   gap: 0.45rem;
