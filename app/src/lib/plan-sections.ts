@@ -68,7 +68,10 @@ export type OpenQuestion = {
   audience: "manager" | "dev";
 };
 
-const DEV_MARKER = /\(\s*(?:for\s+(?:the\s+)?)?dev(?:eloper)?s?(?:\s+team)?\s*\)\s*$/i;
+// A trailing parenthetical that STARTS with a dev-team designation counts,
+// even with trailing words: "(dev team)", "(dev team to confirm X with Anna)".
+const DEV_MARKER = /\(\s*(?:for\s+(?:the\s+)?)?dev(?:eloper)?s?(?:\s+team)?\b[^)]*\)\s*$/i;
+const BULLET = /^\s*(?:[-*]|\d+[.)])\s+/;
 
 /** Structured bullets from the open_questions section ("none" -> []). */
 export function parseOpenQuestionsDetailed(
@@ -78,7 +81,9 @@ export function parseOpenQuestionsDetailed(
   if (!body || /^none\b/i.test(body)) return [];
   return body
     .split(/\r?\n/)
-    .map((l) => l.replace(/^\s*(?:[-*]|\d+[.)])\s*/, "").trim())
+    // Only actual bullets are questions - prose (e.g. a Resolved log) is not.
+    .filter((l) => BULLET.test(l))
+    .map((l) => l.replace(BULLET, "").trim())
     .filter((l) => l.length > 8)
     .map((l) => l.replace(/\*\*/g, ""))
     .map((l) => ({
