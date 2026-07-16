@@ -307,54 +307,87 @@ export async function POST(req: Request) {
         const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
         let reply = "";
 
-        for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-          send({ type: "activity", kind: "think", label: "Thinking" });
-          const response = await client.messages.create({
-            model,
-            max_tokens: 8192,
-            system,
-            messages,
-            tools: TOOLS,
-            tool_choice: { type: "auto" },
-          });
-
-          const text = response.content
-            .filter((b): b is Anthropic.TextBlock => b.type === "text")
-            .map((b) => b.text)
-            .join("\n")
-            .trim();
-          if (text) reply = reply ? `${reply}\n\n${text}` : text;
-
-          const toolUses = response.content.filter(
-            (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
-          );
-          if (response.stop_reason !== "tool_use" || !toolUses.length) break;
-          if (round === MAX_TOOL_ROUNDS) {
-            reply = reply || "I ran out of exploration budget this turn - ask me to continue.";
-            break;
-          }
-
-          messages.push({ role: "assistant", content: response.content });
-          const results: Anthropic.ToolResultBlockParam[] = [];
-          for (const use of toolUses) {
-            const input = use.input as Record<string, unknown>;
-            send({ type: "activity", ...describeTool(use.name, input) });
-            let result: string;
-            let isError = false;
-            try {
-              result = await runTool(use.name, input, plan.id);
-            } catch (e) {
-              result = `Tool failed: ${(e as Error).message}`;
-              isError = true;
-            }
-            results.push({
-              type: "tool_result",
-              tool_use_id: use.id,
-              content: result,
-              ...(isError ? { is_error: true } : {}),
+        // captureReply=false runs a silent repair round (tools only, text discarded).
+        const runRounds = async (maxRounds: number, captureReply: boolean) => {
+          for (let round = 0; round <= maxRounds; round++) {
+            send({ type: "activity", kind: "think", label: "Thinking" });
+            const response = await client.messages.create({
+              model,
+              max_tokens: 8192,
+              system,
+              messages,
+              tools: TOOLS,
+              tool_choice: { type: "auto" },
             });
+
+            const text = response.content
+              .filter((b): b is Anthropic.TextBlock => b.type === "text")
+              .map((b) => b.text)
+              .join("\n")
+              .trim();
+            if (text && captureReply) reply = reply ? `${reply}\n\n${text}` : text;
+
+            const toolUses = response.content.filter(
+              (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
+            );
+            if (response.stop_reason !== "tool_use" || !toolUses.length) break;
+            if (round === maxRounds) {
+              if (captureReply) {
+                reply = reply || "I ran out of exploration budget this turn - ask me to continue.";
+              }
+              break;
+            }
+
+            messages.push({ role: "assistant", content: response.content });
+            const results: Anthropic.ToolResultBlockParam[] = [];
+            for (const use of toolUses) {
+              const input = use.input as Record<string, unknown>;
+              send({ type: "activity", ...describeTool(use.name, input) });
+              let result: string;
+              let isError = false;
+              try {
+                result = await runTool(use.name, input, plan.id);
+              } catch (e) {
+                result = `Tool failed: ${(e as Error).message}`;
+                isError = true;
+              }
+              results.push({
+                type: "tool_result",
+                tool_use_id: use.id,
+                content: result,
+                ...(isError ? { is_error: true } : {}),
+              });
+            }
+            messages.push({ role: "user", content: results });
           }
-          messages.push({ role: "user", content: results });
+        };
+
+        await runRounds(MAX_TOOL_ROUNDS, true);
+
+        // Drift guard: if this turn answered a specific open question but the
+        // document still lists it, force a silent repair round so the section
+        // matches what was said in chat. Prompts alone proved insufficient.
+        const answeredMatch = body.message.match(
+          /^Answering this open question: "([\s\S]+?)"/
+        );
+        if (answeredMatch) {
+          const answered = answeredMatch[1].slice(0, 60).toLowerCase();
+          const current = await db.query.plans.findFirst({
+            where: eq(schema.plans.id, plan.id),
+          });
+          const stillListed = current
+            ? parseOpenQuestionsDetailed(current.sections).some((q) =>
+                q.text.toLowerCase().includes(answered.slice(0, 40))
+              )
+            : false;
+          if (stillListed) {
+            send({ type: "activity", kind: "plan", label: "Syncing the open-questions list" });
+            messages.push({
+              role: "user",
+              content: `SYSTEM CHECK: the open_questions section still lists the question that was just answered ("${answeredMatch[1].slice(0, 120)}"). Call update_plan NOW to bring the section in line with the conversation - remove or re-tag resolved items, fold their resolution into the relevant sections, keep everything else unchanged. Reply with only a one-word acknowledgement.`,
+            });
+            await runRounds(3, false);
+          }
         }
 
         // Persist the audit transcript (chat text only - the tool traffic is

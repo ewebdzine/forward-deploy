@@ -582,17 +582,33 @@ tr:last-child td {
 .ready-banner {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
-  background: var(--surface);
-  border: 1px solid var(--ok);
-  border-left: 4px solid var(--ok);
+  gap: 1rem;
+  background: linear-gradient(
+    135deg,
+    rgba(55, 132, 94, 0.14),
+    rgba(55, 132, 94, 0.04)
+  );
+  border: 1.5px solid var(--ok);
   border-radius: var(--radius);
-  padding: 0.85rem 1.1rem;
+  padding: 1.1rem 1.3rem;
   flex-wrap: wrap;
 }
 .ready-banner > div {
   flex: 1;
   min-width: 220px;
+}
+.ready-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--ok);
+}
+.ready-banner .ready-cta {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: #fff;
+  font-size: 0.95rem;
+  padding: 0.55rem 1.3rem;
 }
 .ready-banner.pop {
   animation: banner-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -604,12 +620,12 @@ tr:last-child td {
 .ready-check {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--ok);
   color: #fff;
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   font-weight: 700;
   flex-shrink: 0;
 }

@@ -276,16 +276,21 @@ export default function PlanBuilder({
             <div className={`ready-banner${justCleared ? " pop" : ""}`}>
               <span className="ready-check">&#10003;</span>
               <div>
-                <strong>All your questions are answered.</strong>
-                <p className="muted" style={{ margin: "0.15rem 0 0" }}>
-                  {plan.resolvedQuestions} answered
+                <span className="ready-title">
+                  This plan is ready for the dev team!
+                </span>
+                <p style={{ margin: "0.2rem 0 0" }}>
+                  Every question for you is answered ({plan.resolvedQuestions}{" "}
+                  resolved)
                   {devQs > 0 &&
-                    ` - ${devQs} remaining item${devQs === 1 ? " is" : "s are"} flagged for the dev team to decide during review`}
-                  . This plan is ready to submit.
+                    ` - the ${devQs} remaining item${devQs === 1 ? "" : "s"} are the developers' to settle during review`}
+                  .
                 </p>
               </div>
               <Link href={`/plans/${planId}`}>
-                <button type="button">Review &amp; submit</button>
+                <button type="button" className="ready-cta">
+                  Review &amp; submit
+                </button>
               </Link>
             </div>
           )}
