@@ -23,13 +23,21 @@ function bandClass(status: string): string {
   return "band-st-queue";
 }
 
+function filterUrl(filter: string, dept: string): string {
+  const params = new URLSearchParams();
+  if (filter) params.set("filter", filter);
+  if (dept) params.set("dept", dept);
+  const qs = params.toString();
+  return qs ? `/plans?${qs}` : "/plans";
+}
+
 export default async function PlansPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; dept?: string }>;
 }) {
   const session = await requireSession();
-  const { filter = "" } = await searchParams;
+  const { filter = "", dept = "" } = await searchParams;
 
   let plans;
   if (session.user.role === "manager") {
@@ -53,12 +61,20 @@ export default async function PlansPage({
     });
   }
 
+  // Department filter chips come from the departments the viewer can see.
+  const visibleDepartments = [
+    ...new Map(plans.map((p) => [p.department.slug, p.department])).values(),
+  ].sort((a, b) => a.name.localeCompare(b.name));
+
   if (filter === "queue") {
     plans = plans.filter((p) =>
       (QUEUE_STATUSES as readonly string[]).includes(p.status)
     );
   } else if (filter) {
     plans = plans.filter((p) => p.status === filter);
+  }
+  if (dept) {
+    plans = plans.filter((p) => p.department.slug === dept);
   }
 
   return (
@@ -75,17 +91,36 @@ export default async function PlansPage({
           + New plan
         </Link>
       </div>
-      <p className="muted">
+      <p className="muted" style={{ marginBottom: "0.25rem" }}>
         {FILTERS.map((f) => (
           <Link
             key={f.key}
-            href={f.key ? `/plans?filter=${f.key}` : "/plans"}
+            href={filterUrl(f.key, dept)}
             style={{ marginRight: "0.75rem", fontWeight: filter === f.key ? 700 : 400 }}
           >
             {f.label}
           </Link>
         ))}
       </p>
+      {visibleDepartments.length > 1 && (
+        <p className="muted">
+          <Link
+            href={filterUrl(filter, "")}
+            style={{ marginRight: "0.75rem", fontWeight: !dept ? 700 : 400 }}
+          >
+            all departments
+          </Link>
+          {visibleDepartments.map((d) => (
+            <Link
+              key={d.slug}
+              href={filterUrl(filter, d.slug)}
+              style={{ marginRight: "0.75rem", fontWeight: dept === d.slug ? 700 : 400 }}
+            >
+              {d.name}
+            </Link>
+          ))}
+        </p>
+      )}
 
       {plans.length ? (
         <div className="tile-grid tile-grid-wide">

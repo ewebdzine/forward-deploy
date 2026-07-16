@@ -887,6 +887,11 @@ a.tile:hover {
   background: rgba(255, 255, 255, 0.75);
   color: #1f1e1d;
   border-color: transparent;
+  /* don't inherit the band's big serif letterform styling */
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 .band-st-draft .status-chip {
   background: var(--surface);
