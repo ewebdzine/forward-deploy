@@ -3,6 +3,7 @@ import { inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/access";
 import { db, schema } from "@/db";
 import { PLAN_SECTIONS, filledSectionCount, parseOpenQuestions } from "@/lib/plan-sections";
+import { listSoftwareCanons, matchPlanSoftware } from "@/lib/software";
 
 export const metadata = { title: "Plans - Forward Deploy" };
 
@@ -77,6 +78,8 @@ export default async function PlansPage({
     plans = plans.filter((p) => p.department.slug === dept);
   }
 
+  const softwareCanons = await listSoftwareCanons().catch(() => []);
+
   return (
     <main>
       <div className="page-head">
@@ -127,6 +130,7 @@ export default async function PlansPage({
           {plans.map((p) => {
             const filled = filledSectionCount(p.sections);
             const openQ = parseOpenQuestions(p.sections).length;
+            const software = matchPlanSoftware(p, softwareCanons).slice(0, 5);
             return (
               <Link className="tile" href={`/plans/${p.id}`} key={p.id}>
                 <div className={`tile-band tile-band-slim ${bandClass(p.status)}`}>
@@ -150,8 +154,33 @@ export default async function PlansPage({
                       {p.updatedAt.toISOString().slice(0, 10)}
                     </span>
                   </span>
-                  <span className="muted" style={{ fontSize: "0.78rem" }}>
-                    {p.author.name ?? p.author.email}
+                  <span className="tile-foot">
+                    <span className="muted" style={{ fontSize: "0.78rem" }}>
+                      {p.author.name ?? p.author.email}
+                    </span>
+                    {software.length > 0 && (
+                      <span className="soft-badges">
+                        {software.map((s) =>
+                          s.logoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              key={s.slug}
+                              src={s.logoUrl}
+                              alt={s.software}
+                              title={s.software}
+                            />
+                          ) : (
+                            <span
+                              key={s.slug}
+                              className="soft-badge-letter"
+                              title={s.software}
+                            >
+                              {s.software.slice(0, 1).toUpperCase()}
+                            </span>
+                          )
+                        )}
+                      </span>
+                    )}
                   </span>
                 </div>
               </Link>

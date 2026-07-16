@@ -68,6 +68,39 @@ export async function readSoftwareCanon(slug: string): Promise<SoftwareCanon> {
   return toCanon(path, content);
 }
 
+/**
+ * Software canons applicable to a plan: explicitly cited canon files, plus
+ * name/alias mentions (word-boundary) in the title and developer-facing
+ * sections. Used to badge plan cards with the products they touch.
+ */
+export function matchPlanSoftware(
+  plan: {
+    title: string;
+    sections: Record<string, string>;
+    citations: string[];
+  },
+  canons: SoftwareCanon[]
+): SoftwareCanon[] {
+  const text = [
+    plan.title,
+    plan.sections.proposed_solution ?? "",
+    plan.sections.affected_systems ?? "",
+    plan.sections.current_process ?? "",
+  ]
+    .join("\n")
+    .toLowerCase();
+
+  return canons.filter((c) => {
+    if (plan.citations.some((cit) => cit.includes(`${c.slug}.md`))) return true;
+    return [c.software, ...c.aliases].some((name) => {
+      const n = name.trim().toLowerCase();
+      if (n.length < 3) return false;
+      const re = new RegExp(`(^|[^a-z0-9])${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`);
+      return re.test(text);
+    });
+  });
+}
+
 export type UndocumentedTool = {
   /** The tool name as the SOPs spell it (most common spelling wins). */
   tool: string;
