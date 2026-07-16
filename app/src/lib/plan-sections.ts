@@ -32,7 +32,7 @@ export const PLAN_SECTIONS = [
     key: "open_questions",
     label: "Open questions",
     required: true,
-    hint: "Unknowns, who can answer them, decisions left to the developers. 'None' is acceptable.",
+    hint: "Unknowns as a bullet list, one per line. End any question that is for the DEVELOPERS to decide with the marker '(dev team)'; unmarked questions are for the manager. 'None' is acceptable.",
   },
   {
     key: "scope_signal",
@@ -62,15 +62,34 @@ export function filledSectionCount(sections: Record<string, string>): number {
   return PLAN_SECTIONS.filter((s) => (sections[s.key] ?? "").trim()).length;
 }
 
-/** Bullet lines from the open_questions section markdown ("none" -> []). */
-export function parseOpenQuestions(
+export type OpenQuestion = {
+  text: string;
+  /** Who the question is for: unmarked -> manager; "(dev team)" marker -> dev. */
+  audience: "manager" | "dev";
+};
+
+const DEV_MARKER = /\(\s*(?:for\s+(?:the\s+)?)?dev(?:eloper)?s?(?:\s+team)?\s*\)\s*$/i;
+
+/** Structured bullets from the open_questions section ("none" -> []). */
+export function parseOpenQuestionsDetailed(
   sections: Record<string, string>
-): string[] {
+): OpenQuestion[] {
   const body = (sections.open_questions ?? "").trim();
   if (!body || /^none\b/i.test(body)) return [];
   return body
     .split(/\r?\n/)
     .map((l) => l.replace(/^\s*(?:[-*]|\d+[.)])\s*/, "").trim())
     .filter((l) => l.length > 8)
-    .map((l) => l.replace(/\*\*/g, ""));
+    .map((l) => l.replace(/\*\*/g, ""))
+    .map((l) => ({
+      text: l.replace(DEV_MARKER, "").trim(),
+      audience: DEV_MARKER.test(l) ? ("dev" as const) : ("manager" as const),
+    }));
+}
+
+/** Bullet lines from the open_questions section markdown ("none" -> []). */
+export function parseOpenQuestions(
+  sections: Record<string, string>
+): string[] {
+  return parseOpenQuestionsDetailed(sections).map((q) => q.text);
 }

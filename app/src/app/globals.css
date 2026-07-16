@@ -916,6 +916,28 @@ a.tile:hover {
   border-color: #c07d0b;
   color: #fff7ea;
 }
+.plan-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+}
+@media (max-width: 720px) {
+  .plan-actions {
+    grid-template-columns: 1fr;
+  }
+}
+.action-card {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+.action-card p {
+  flex: 1;
+}
+.action-card-warn {
+  border-color: #c07d0b;
+}
 .tile-foot {
   display: flex;
   align-items: center;

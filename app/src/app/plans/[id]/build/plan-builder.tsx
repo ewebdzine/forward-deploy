@@ -7,7 +7,7 @@ import remarkGfm from "remark-gfm";
 import {
   PLAN_SECTIONS,
   filledSectionCount,
-  parseOpenQuestions,
+  parseOpenQuestionsDetailed,
 } from "@/lib/plan-sections";
 import ActivityIcon from "@/components/activity-icon";
 
@@ -124,7 +124,7 @@ export default function PlanBuilder({
   }
 
   const filled = filledCount(plan.sections);
-  const openQuestions = parseOpenQuestions(plan.sections);
+  const openQuestions = parseOpenQuestionsDetailed(plan.sections);
 
   return (
     <div className="chat-page">
@@ -160,15 +160,20 @@ export default function PlanBuilder({
               </div>
               <ul>
                 {openQuestions.map((q) => (
-                  <li key={q}>
+                  <li key={q.text}>
                     <button
                       type="button"
                       className="oq-item"
                       onClick={() =>
-                        send(`Let's answer this open question: ${q}`)
+                        send(`Let's answer this open question: ${q.text}`)
                       }
                     >
-                      {q}
+                      {q.text}
+                      {q.audience === "dev" && (
+                        <span className="tag-chip" style={{ marginLeft: 6 }}>
+                          dev team
+                        </span>
+                      )}
                     </button>
                   </li>
                 ))}
