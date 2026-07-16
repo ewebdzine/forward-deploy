@@ -12,6 +12,8 @@ const MAX_HISTORY_TURNS = 12; // chat text only, never tool calls (Craig pattern
 
 type ChatTurn = { role: "user" | "assistant"; content: string };
 
+type ChatImage = { mediaType: string; data: string };
+
 type SopChatRequest = {
   departmentSlug: string;
   message: string;
@@ -20,7 +22,34 @@ type SopChatRequest = {
   draft?: { title?: string; markdown?: string };
   /** Set when revising an existing SOP: its repo path. */
   revisePath?: string;
+  /** Pasted screenshots for THIS turn only (not carried in history). */
+  images?: ChatImage[];
 };
+
+const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+
+function buildUserContent(
+  message: string,
+  images: ChatImage[] | undefined
+): string | Anthropic.ContentBlockParam[] {
+  const valid = (images ?? [])
+    .filter((i) => IMAGE_TYPES.has(i.mediaType) && i.data.length < 7_000_000)
+    .slice(0, 3);
+  if (!valid.length) return message;
+  return [
+    ...valid.map(
+      (i): Anthropic.ImageBlockParam => ({
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: i.mediaType as "image/png" | "image/jpeg" | "image/webp" | "image/gif",
+          data: i.data,
+        },
+      })
+    ),
+    { type: "text", text: message },
+  ];
+}
 
 const SET_SOP_TITLE_TOOL: Anthropic.Tool = {
   name: "set_sop_title",
@@ -194,7 +223,7 @@ export async function POST(req: Request) {
   const client = new Anthropic();
   const messages: Anthropic.MessageParam[] = [
     ...history,
-    { role: "user", content: body.message },
+    { role: "user", content: buildUserContent(body.message, body.images) },
   ];
 
   let reply = "";

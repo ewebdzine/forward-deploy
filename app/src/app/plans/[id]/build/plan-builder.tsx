@@ -10,6 +10,7 @@ import {
   parseOpenQuestionsDetailed,
 } from "@/lib/plan-sections";
 import ActivityIcon from "@/components/activity-icon";
+import { PastedThumbs, usePastedImages } from "@/components/use-pasted-images";
 
 type ChatTurn = {
   role: "user" | "assistant";
@@ -49,6 +50,7 @@ export default function PlanBuilder({
   const [activities, setActivities] = useState<Activity[]>([]);
   const [replies, setReplies] = useState<Record<string, string>>({});
   const [justCleared, setJustCleared] = useState(false);
+  const pasted = usePastedImages();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function scrollLog() {
@@ -68,10 +70,17 @@ export default function PlanBuilder({
 
     setActivities([]);
     try {
+      const images = pasted.payload();
+      pasted.clear();
       const res = await fetch("/api/plan-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId, message, history: messages }),
+        body: JSON.stringify({
+          planId,
+          message,
+          history: messages,
+          ...(images.length ? { images } : {}),
+        }),
       });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
@@ -318,10 +327,12 @@ export default function PlanBuilder({
 
       <div className="composer">
         <div className="composer-inner">
+          <PastedThumbs images={pasted.images} onRemove={pasted.remove} />
           <textarea
             value={input}
-            placeholder="What hurts, and what do you wish happened instead? (Enter to send)"
+            placeholder="What hurts, and what do you wish happened instead? (Enter to send; paste screenshots)"
             onChange={(e) => setInput(e.target.value)}
+            onPaste={pasted.onPaste}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();

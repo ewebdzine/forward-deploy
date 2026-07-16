@@ -17,11 +17,41 @@ const FILE_BUDGET = 30_000;
 
 type ChatTurn = { role: "user" | "assistant"; content: string };
 
+type ChatImage = { mediaType: string; data: string };
+
 type PlanChatRequest = {
   planId: string;
   message: string;
   history?: ChatTurn[];
+  /** Pasted screenshots for THIS turn only (not carried in history). */
+  images?: ChatImage[];
 };
+
+const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+
+/** Current-turn user content: pasted images (validated) + the text. */
+function buildUserContent(
+  message: string,
+  images: ChatImage[] | undefined
+): string | Anthropic.ContentBlockParam[] {
+  const valid = (images ?? [])
+    .filter((i) => IMAGE_TYPES.has(i.mediaType) && i.data.length < 7_000_000)
+    .slice(0, 3);
+  if (!valid.length) return message;
+  return [
+    ...valid.map(
+      (i): Anthropic.ImageBlockParam => ({
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: i.mediaType as "image/png" | "image/jpeg" | "image/webp" | "image/gif",
+          data: i.data,
+        },
+      })
+    ),
+    { type: "text", text: message },
+  ];
+}
 
 const sectionProperties = Object.fromEntries(
   PLAN_SECTIONS.map((s) => [
@@ -315,7 +345,7 @@ export async function POST(req: Request) {
 
         const messages: Anthropic.MessageParam[] = [
           ...history,
-          { role: "user", content: body.message },
+          { role: "user", content: buildUserContent(body.message, body.images) },
         ];
 
         const client = new Anthropic();

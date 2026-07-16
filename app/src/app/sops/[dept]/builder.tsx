@@ -5,6 +5,7 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import ActivityIcon from "@/components/activity-icon";
+import { PastedThumbs, usePastedImages } from "@/components/use-pasted-images";
 import { commitSop } from "../actions";
 
 type ChatTurn = { role: "user" | "assistant"; content: string };
@@ -56,6 +57,7 @@ export default function SopBuilder({
     sha: string;
   } | null>(revise ? { slug: initial!.slug, markdown: initial!.markdown, sha: "" } : null);
   const [toast, setToast] = useState<{ text: string; sub?: string; key: number } | null>(null);
+  const pasted = usePastedImages();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const dirty =
@@ -78,6 +80,8 @@ export default function SopBuilder({
     scrollLog();
 
     try {
+      const images = pasted.payload();
+      pasted.clear();
       const res = await fetch("/api/sop-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -87,6 +91,7 @@ export default function SopBuilder({
           history: messages,
           draft: { title, markdown },
           revisePath: initial?.path,
+          ...(images.length ? { images } : {}),
         }),
       });
       const data = await res.json();
@@ -181,10 +186,12 @@ export default function SopBuilder({
 
       <div className="composer">
         <div className="composer-inner">
+          <PastedThumbs images={pasted.images} onRemove={pasted.remove} />
           <textarea
             value={input}
-            placeholder="Describe the process... (Enter to send, Shift+Enter for a new line)"
+            placeholder="Describe the process... (Enter to send; paste screenshots)"
             onChange={(e) => setInput(e.target.value)}
+            onPaste={pasted.onPaste}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();

@@ -474,6 +474,37 @@ tr:last-child td {
 .composer-inner textarea:focus {
   outline: none;
 }
+.paste-strip {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.2rem 0.2rem 0;
+  flex-wrap: wrap;
+}
+.paste-thumb {
+  position: relative;
+  display: inline-block;
+}
+.paste-thumb img {
+  height: 54px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  display: block;
+}
+.paste-thumb button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
 .composer-foot {
   display: flex;
   align-items: center;
