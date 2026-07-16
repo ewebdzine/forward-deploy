@@ -43,6 +43,7 @@ export default function PlanBuilder({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [replies, setReplies] = useState<Record<string, string>>({});
+  const [justCleared, setJustCleared] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function scrollLog() {
@@ -101,9 +102,19 @@ export default function PlanBuilder({
             ]);
             if (event.plan) {
               const hadSections = filledCount(plan.sections) > 0;
+              const hadManagerQs = parseOpenQuestionsDetailed(
+                plan.sections
+              ).some((q) => q.audience === "manager");
+              const hasManagerQs = parseOpenQuestionsDetailed(
+                event.plan.sections
+              ).some((q) => q.audience === "manager");
               setPlan(event.plan);
               if (!hadSections && filledCount(event.plan.sections) > 0) {
                 setDrawerOpen(true);
+              }
+              // The moment the manager's last question is answered: celebrate.
+              if (hadManagerQs && !hasManagerQs && event.plan.resolvedQuestions > 0) {
+                setJustCleared(true);
               }
             }
             finished = true;
@@ -127,6 +138,10 @@ export default function PlanBuilder({
 
   const filled = filledCount(plan.sections);
   const openQuestions = parseOpenQuestionsDetailed(plan.sections);
+  const managerQs = openQuestions.filter((q) => q.audience === "manager").length;
+  const devQs = openQuestions.length - managerQs;
+  const totalQs = plan.resolvedQuestions + openQuestions.length;
+  const ready = managerQs === 0 && totalQs > 0;
 
   function answerQuestion(question: string) {
     const reply = (replies[question] ?? "").trim();
@@ -231,6 +246,23 @@ export default function PlanBuilder({
               </div>
             )
           )}
+          {ready && !busy && (
+            <div className={`ready-banner${justCleared ? " pop" : ""}`}>
+              <span className="ready-check">&#10003;</span>
+              <div>
+                <strong>All your questions are answered.</strong>
+                <p className="muted" style={{ margin: "0.15rem 0 0" }}>
+                  {plan.resolvedQuestions} answered
+                  {devQs > 0 &&
+                    ` - ${devQs} remaining item${devQs === 1 ? " is" : "s are"} flagged for the dev team to decide during review`}
+                  . This plan is ready to submit.
+                </p>
+              </div>
+              <Link href={`/plans/${planId}`}>
+                <button type="button">Review &amp; submit</button>
+              </Link>
+            </div>
+          )}
           {busy && (
             <div className="msg msg-assistant activity-feed">
               <div>
@@ -277,17 +309,17 @@ export default function PlanBuilder({
                 <ActivityIcon kind="sop" /> Plan document - {filled}/{PLAN_SECTIONS.length} sections
                 {plan.mockups.length > 0 && ` - ${plan.mockups.length} mockup${plan.mockups.length === 1 ? "" : "s"}`}
               </button>
-              {plan.resolvedQuestions + openQuestions.length > 0 && (
+              {totalQs > 0 && (
                 <button
                   type="button"
-                  className={`draft-chip ${openQuestions.length > 0 ? "draft-chip-warn" : "draft-chip-done"}`}
+                  className={`draft-chip ${managerQs > 0 ? "draft-chip-warn" : "draft-chip-done"}`}
                   onClick={() =>
                     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })
                   }
                 >
-                  {openQuestions.length > 0
-                    ? `${openQuestions.length} question${openQuestions.length === 1 ? "" : "s"} left - ${plan.resolvedQuestions} of ${plan.resolvedQuestions + openQuestions.length} answered`
-                    : `All ${plan.resolvedQuestions} questions answered`}
+                  {managerQs > 0
+                    ? `${managerQs} for you - ${plan.resolvedQuestions} of ${totalQs} answered`
+                    : `All your questions answered${devQs > 0 ? ` - ${devQs} for the dev team` : ""}`}
                 </button>
               )}
             </span>
