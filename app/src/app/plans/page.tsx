@@ -2,6 +2,7 @@ import Link from "next/link";
 import { inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/access";
 import { db, schema } from "@/db";
+import { PLAN_SECTIONS, filledSectionCount, parseOpenQuestions } from "@/lib/plan-sections";
 
 export const metadata = { title: "Plans - Forward Deploy" };
 
@@ -13,6 +14,14 @@ const FILTERS = [
 ] as const;
 
 const QUEUE_STATUSES = ["submitted", "in_review", "changes_requested"] as const;
+
+/** Band tint by where the plan sits in the workflow. */
+function bandClass(status: string): string {
+  if (status === "draft") return "band-st-draft";
+  if (["approved", "in_development", "shipped"].includes(status)) return "band-st-good";
+  if (status === "declined") return "band-st-declined";
+  return "band-st-queue";
+}
 
 export default async function PlansPage({
   searchParams,
@@ -54,11 +63,18 @@ export default async function PlansPage({
 
   return (
     <main>
-      <h1>Plans</h1>
-      <p className="muted">
-        Developer-ready proposals, built with Claude from your SOPs, canons,
-        and codebase. <Link href="/plans/new">+ New plan</Link>
-      </p>
+      <div className="page-head">
+        <div>
+          <h1>Plans</h1>
+          <p className="muted" style={{ margin: 0 }}>
+            Developer-ready proposals, built with Claude from your SOPs,
+            canons, and codebase.
+          </p>
+        </div>
+        <Link className="button-secondary" href="/plans/new">
+          + New plan
+        </Link>
+      </div>
       <p className="muted">
         {FILTERS.map((f) => (
           <Link
@@ -70,45 +86,52 @@ export default async function PlansPage({
           </Link>
         ))}
       </p>
-      <div className="card">
-        {plans.length ? (
-          <table>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Department</th>
-                <th>Author</th>
-                <th>Status</th>
-                <th>Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {plans.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <Link href={`/plans/${p.id}`}>{p.title}</Link>
-                  </td>
-                  <td className="muted">{p.department.name}</td>
-                  <td className="muted">{p.author.name ?? p.author.email}</td>
-                  <td>
-                    <span className={`status-chip status-${p.status}`}>
-                      {p.status.replace(/_/g, " ")}
+
+      {plans.length ? (
+        <div className="tile-grid tile-grid-wide">
+          {plans.map((p) => {
+            const filled = filledSectionCount(p.sections);
+            const openQ = parseOpenQuestions(p.sections).length;
+            return (
+              <Link className="tile" href={`/plans/${p.id}`} key={p.id}>
+                <div className={`tile-band tile-band-slim ${bandClass(p.status)}`}>
+                  <span className={`status-chip status-${p.status}`}>
+                    {p.status.replace(/_/g, " ")}
+                  </span>
+                </div>
+                <div className="tile-body">
+                  <span className="tile-name">{p.title}</span>
+                  <span className="tile-chips">
+                    <span className="tag-chip">{p.department.name}</span>
+                    <span className="tag-chip">
+                      {filled}/{PLAN_SECTIONS.length} sections
                     </span>
-                  </td>
-                  <td className="muted">
-                    {p.updatedAt.toISOString().slice(0, 10)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="muted">
-            No plans yet. <Link href="/plans/new">Start the first one</Link> -
-            describe an inefficiency and build the case for fixing it.
+                    {openQ > 0 && (
+                      <span className="tag-chip tag-chip-warn">
+                        {openQ} open question{openQ === 1 ? "" : "s"}
+                      </span>
+                    )}
+                    <span className="tag-chip">
+                      {p.updatedAt.toISOString().slice(0, 10)}
+                    </span>
+                  </span>
+                  <span className="muted" style={{ fontSize: "0.78rem" }}>
+                    {p.author.name ?? p.author.email}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="card">
+          <p className="muted" style={{ margin: 0 }}>
+            {filter
+              ? "No plans match this filter."
+              : "No plans yet. Start the first one - describe an inefficiency and build the case for fixing it."}
           </p>
-        )}
-      </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -864,6 +864,40 @@ a.tile:hover {
   max-width: 65%;
   object-fit: contain;
 }
+.tile-grid-wide {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.tile-band-slim {
+  height: 52px;
+}
+.band-st-draft {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.band-st-queue {
+  background: var(--accent-soft);
+}
+.band-st-good {
+  background: #b8cfc0;
+}
+.band-st-declined {
+  background: #e3bcb4;
+}
+.tile-band .status-chip {
+  background: rgba(255, 255, 255, 0.75);
+  color: #1f1e1d;
+  border-color: transparent;
+}
+.band-st-draft .status-chip {
+  background: var(--surface);
+  color: var(--muted);
+  border-color: var(--border);
+}
+.tag-chip-warn {
+  color: var(--warn);
+  border-color: var(--warn);
+  background: transparent;
+}
 .tile-body {
   padding: 0.75rem 0.95rem 0.9rem;
   display: flex;

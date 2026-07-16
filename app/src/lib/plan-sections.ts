@@ -56,3 +56,21 @@ export function missingRequiredSections(
     (s) => s.required && !(sections[s.key] ?? "").trim()
   ).map((s) => s.label);
 }
+
+/** How many sections have content - the n in "n/6 sections". */
+export function filledSectionCount(sections: Record<string, string>): number {
+  return PLAN_SECTIONS.filter((s) => (sections[s.key] ?? "").trim()).length;
+}
+
+/** Bullet lines from the open_questions section markdown ("none" -> []). */
+export function parseOpenQuestions(
+  sections: Record<string, string>
+): string[] {
+  const body = (sections.open_questions ?? "").trim();
+  if (!body || /^none\b/i.test(body)) return [];
+  return body
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*(?:[-*]|\d+[.)])\s*/, "").trim())
+    .filter((l) => l.length > 8)
+    .map((l) => l.replace(/\*\*/g, ""));
+}

@@ -4,7 +4,11 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { PLAN_SECTIONS } from "@/lib/plan-sections";
+import {
+  PLAN_SECTIONS,
+  filledSectionCount,
+  parseOpenQuestions,
+} from "@/lib/plan-sections";
 import ActivityIcon from "@/components/activity-icon";
 
 type ChatTurn = { role: "user" | "assistant"; content: string };
@@ -16,22 +20,9 @@ type PlanState = {
   mockups: { id: string; caption: string }[];
 };
 
-function filledCount(sections: Record<string, string>): number {
-  return PLAN_SECTIONS.filter((s) => (sections[s.key] ?? "").trim()).length;
-}
+const filledCount = filledSectionCount;
 
 type Activity = { kind: string; label: string };
-
-/** Bullet lines from the open_questions section markdown ("none" -> []). */
-function parseOpenQuestions(sections: Record<string, string>): string[] {
-  const body = (sections.open_questions ?? "").trim();
-  if (!body || /^none\b/i.test(body)) return [];
-  return body
-    .split(/\r?\n/)
-    .map((l) => l.replace(/^\s*(?:[-*]|\d+[.)])\s*/, "").trim())
-    .filter((l, i, arr) => l.length > 8 && (arr.length > 1 || /[-*\d]/.test(body[0]) || i === 0))
-    .map((l) => l.replace(/\*\*/g, ""));
-}
 
 export default function PlanBuilder({
   planId,
