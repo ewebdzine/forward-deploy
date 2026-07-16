@@ -196,11 +196,19 @@ export default function PlanBuilder({
               </ul>
             </div>
           )}
-          {messages.map((m, i) => (
-            <div key={i} className={`msg msg-${m.role}`}>
-              {m.content}
-            </div>
-          ))}
+          {messages.map((m, i) =>
+            m.role === "assistant" ? (
+              <div key={i} className="msg msg-assistant msg-md">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {m.content}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <div key={i} className="msg msg-user">
+                {m.content}
+              </div>
+            )
+          )}
           {busy && (
             <div className="msg msg-assistant activity-feed">
               <div>

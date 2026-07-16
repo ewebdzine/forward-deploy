@@ -84,7 +84,8 @@ function identityBlock(
 
 Rules:
 - Name it immediately: on your first reply, call set_sop_title with a working title based on what the manager described - before any drafting. Update it if the focus changes.
-- Interview first, write second. Ask the questions a good analyst would; don't draft from a one-line description. Once you have the essentials, call update_sop_draft and keep refining it each turn.
+- Interview first, write second. Ask the questions a good analyst would, ONE at a time; don't draft from a one-line description. Once you have the essentials, call update_sop_draft and keep refining it each turn.
+- Format your question distinctly: end the reply with a blockquote - `> **Question:** <the question>` - with any commentary as normal prose above it. One blockquote per reply, always last.
 - One SOP documents ONE process, tool, or recurring workflow. Several small SOPs beat one giant one. If the manager describes multiple distinct processes, say so, help them pick one to document now, and note the others as follow-ups.
 - The document must follow this exact structure - YAML frontmatter, then these sections:
 

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { commitSop } from "../actions";
 
 type ChatTurn = { role: "user" | "assistant"; content: string };
@@ -151,11 +153,19 @@ export default function SopBuilder({
 
       <div className="chat-scroll" ref={scrollRef}>
         <div className="chat-inner">
-          {messages.map((m, i) => (
-            <div key={i} className={`msg msg-${m.role}`}>
-              {m.content}
-            </div>
-          ))}
+          {messages.map((m, i) =>
+            m.role === "assistant" ? (
+              <div key={i} className="msg msg-assistant msg-md">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {m.content}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <div key={i} className="msg msg-user">
+                {m.content}
+              </div>
+            )
+          )}
           {busy && (
             <div className="msg msg-assistant">
               <span className="typing-dots">
