@@ -19,6 +19,21 @@ function filledCount(sections: Record<string, string>): number {
   return PLAN_SECTIONS.filter((s) => (sections[s.key] ?? "").trim()).length;
 }
 
+const ACTIVITY_ICONS: Record<string, string> = {
+  context: "\u{1F5FA}️", // map
+  think: "\u{1F4AD}", // thought balloon
+  sop: "\u{1F4CB}", // clipboard
+  canon: "\u{1F4D8}", // blue book
+  software: "\u{1F4E6}", // package
+  code: "\u{1F4C4}", // page
+  search: "\u{1F50D}", // magnifier
+  browse: "\u{1F4C1}", // folder
+  plan: "\u{1F4DD}", // memo
+  mockup: "\u{1F3A8}", // palette
+};
+
+type Activity = { kind: string; label: string };
+
 export default function PlanBuilder({
   planId,
   departmentName,
@@ -33,6 +48,7 @@ export default function PlanBuilder({
   const [busy, setBusy] = useState(false);
   const [plan, setPlan] = useState<PlanState>(initial);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function scrollLog() {
@@ -50,24 +66,59 @@ export default function PlanBuilder({
     setMessages(nextMessages);
     scrollLog();
 
+    setActivities([]);
     try {
       const res = await fetch("/api/plan-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planId, message, history: messages }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-      setMessages([...nextMessages, { role: "assistant", content: data.reply }]);
-      if (data.plan) {
-        const hadSections = filledCount(plan.sections) > 0;
-        setPlan(data.plan);
-        // First time the document takes shape, slide it in so the manager
-        // sees it exists; afterwards the chip carries the running count.
-        if (!hadSections && filledCount(data.plan.sections) > 0) {
-          setDrawerOpen(true);
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? `HTTP ${res.status}`);
+      }
+
+      // NDJSON stream: activity events as Claude explores, then done/error.
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finished = false;
+      while (!finished) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const event = JSON.parse(line);
+          if (event.type === "activity") {
+            setActivities((prev) =>
+              // Collapse consecutive "Thinking" ticks into one.
+              event.kind === "think" && prev[prev.length - 1]?.kind === "think"
+                ? prev
+                : [...prev, { kind: event.kind, label: event.label }]
+            );
+            scrollLog();
+          } else if (event.type === "done") {
+            setMessages([
+              ...nextMessages,
+              { role: "assistant", content: event.reply },
+            ]);
+            if (event.plan) {
+              const hadSections = filledCount(plan.sections) > 0;
+              setPlan(event.plan);
+              if (!hadSections && filledCount(event.plan.sections) > 0) {
+                setDrawerOpen(true);
+              }
+            }
+            finished = true;
+          } else if (event.type === "error") {
+            throw new Error(event.error);
+          }
         }
       }
+      if (!finished) throw new Error("The connection ended before the reply arrived - ask me to continue.");
     } catch (e) {
       setMessages([
         ...nextMessages,
@@ -75,6 +126,7 @@ export default function PlanBuilder({
       ]);
     } finally {
       setBusy(false);
+      setActivities([]);
       scrollLog();
     }
   }
@@ -103,15 +155,22 @@ export default function PlanBuilder({
             </div>
           ))}
           {busy && (
-            <div className="msg msg-assistant">
-              <span className="typing-dots">
-                <i />
-                <i />
-                <i />
-              </span>
-              <span className="muted" style={{ marginLeft: 8, fontSize: "0.85rem" }}>
-                exploring the codebase - this can take a minute
-              </span>
+            <div className="msg msg-assistant activity-feed">
+              <div>
+                <span className="typing-dots">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              </div>
+              {activities.slice(-6).map((a, i, shown) => (
+                <div
+                  key={`${activities.length}-${i}`}
+                  className={`activity-line${i === shown.length - 1 ? " current" : ""}`}
+                >
+                  {ACTIVITY_ICONS[a.kind] ?? "\u{1F4C4}"} {a.label}
+                </div>
+              ))}
             </div>
           )}
         </div>

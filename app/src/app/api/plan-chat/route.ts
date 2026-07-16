@@ -6,7 +6,7 @@ import { db, schema } from "@/db";
 import { canAccessDepartment } from "@/lib/access";
 import { buildPlanBreadthBlock, buildPlanStateBlock } from "@/lib/plan-context";
 import { PLAN_SECTIONS } from "@/lib/plan-sections";
-import { getSourceControl } from "@/lib/source-control";
+import { getSourceControl, softwareDocsPath, sopPath } from "@/lib/source-control";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -118,6 +118,37 @@ How you work:
 Department: ${departmentName}. Manager: ${managerName}.`;
 }
 
+/** Human-readable activity line for the live progress feed, by tool call. */
+function describeTool(
+  name: string,
+  input: Record<string, unknown>
+): { kind: string; label: string } {
+  const path = String(input.path ?? "");
+  switch (name) {
+    case "read_repo_file":
+      if (path === "CANONIFY.md" || path.startsWith("docs/integrations/") || path.startsWith("docs/composite/") || path.startsWith("docs/services/") || path.startsWith("docs/design/")) {
+        return { kind: "canon", label: `Reading canon: ${path}` };
+      }
+      if (path.startsWith(`${sopPath()}/`)) {
+        return { kind: "sop", label: `Reading SOP: ${path.slice(sopPath().length + 1)}` };
+      }
+      if (path.startsWith(`${softwareDocsPath()}/`)) {
+        return { kind: "software", label: `Reading software canon: ${path.split("/").pop()}` };
+      }
+      return { kind: "code", label: `Reading code: ${path}` };
+    case "search_code":
+      return { kind: "search", label: `Searching the codebase for "${String(input.query ?? "")}"` };
+    case "list_repo_files":
+      return { kind: "browse", label: `Browsing ${path || "the repo root"}` };
+    case "update_plan":
+      return { kind: "plan", label: "Updating the plan document" };
+    case "create_mockup":
+      return { kind: "mockup", label: `Creating mockup: ${String(input.caption ?? "")}` };
+    default:
+      return { kind: "code", label: name };
+  }
+}
+
 async function runTool(
   name: string,
   input: Record<string, unknown>,
@@ -217,133 +248,152 @@ export async function POST(req: Request) {
     });
   }
 
-  const system: Anthropic.TextBlockParam[] = [
-    {
-      type: "text",
-      text: identityBlock(
-        plan.department.name,
-        session.user.name ?? session.user.email
-      ),
-    },
-    {
-      type: "text",
-      text: await buildPlanBreadthBlock(),
-      cache_control: { type: "ephemeral" },
-    },
-    {
-      type: "text",
-      text: buildPlanStateBlock({
-        title: plan.title,
-        sections: plan.sections,
-        citations: plan.citations,
-        mockupCaptions: plan.mockups.map((m) => m.caption),
-      }),
-    },
-  ];
-
   const history = (body.history ?? [])
     .filter((t) => t.role === "user" || t.role === "assistant")
     .slice(-MAX_HISTORY_TURNS)
     .map((t) => ({ role: t.role, content: String(t.content) }));
 
-  const messages: Anthropic.MessageParam[] = [
-    ...history,
-    { role: "user", content: body.message },
-  ];
+  const userEmail = session.user.email;
+  const userName = session.user.name ?? session.user.email;
 
-  const client = new Anthropic();
-  const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
-  let reply = "";
+  // Stream NDJSON events so the manager watches the exploration live:
+  // {type:"activity"} per tool call, then {type:"done"} with the reply + plan.
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (event: Record<string, unknown>) =>
+        controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
 
-  try {
-    for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-      const response = await client.messages.create({
-        model,
-        max_tokens: 8192,
-        system,
-        messages,
-        tools: TOOLS,
-        tool_choice: { type: "auto" },
-      });
+      try {
+        send({ type: "activity", kind: "context", label: "Loading the breadth maps (canons, SOP indexes, software, company profile)" });
 
-      const text = response.content
-        .filter((b): b is Anthropic.TextBlock => b.type === "text")
-        .map((b) => b.text)
-        .join("\n")
-        .trim();
-      if (text) reply = reply ? `${reply}\n\n${text}` : text;
+        const system: Anthropic.TextBlockParam[] = [
+          { type: "text", text: identityBlock(plan.department.name, userName) },
+          {
+            type: "text",
+            text: await buildPlanBreadthBlock(),
+            cache_control: { type: "ephemeral" },
+          },
+          {
+            type: "text",
+            text: buildPlanStateBlock({
+              title: plan.title,
+              sections: plan.sections,
+              citations: plan.citations,
+              mockupCaptions: plan.mockups.map((m) => m.caption),
+            }),
+          },
+        ];
 
-      const toolUses = response.content.filter(
-        (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
-      );
-      if (response.stop_reason !== "tool_use" || !toolUses.length) break;
-      if (round === MAX_TOOL_ROUNDS) {
-        reply = reply || "I ran out of exploration budget this turn - ask me to continue.";
-        break;
-      }
+        const messages: Anthropic.MessageParam[] = [
+          ...history,
+          { role: "user", content: body.message },
+        ];
 
-      messages.push({ role: "assistant", content: response.content });
-      const results: Anthropic.ToolResultBlockParam[] = [];
-      for (const use of toolUses) {
-        let result: string;
-        let isError = false;
-        try {
-          result = await runTool(use.name, use.input as Record<string, unknown>, plan.id);
-        } catch (e) {
-          result = `Tool failed: ${(e as Error).message}`;
-          isError = true;
+        const client = new Anthropic();
+        const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
+        let reply = "";
+
+        for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
+          send({ type: "activity", kind: "think", label: "Thinking" });
+          const response = await client.messages.create({
+            model,
+            max_tokens: 8192,
+            system,
+            messages,
+            tools: TOOLS,
+            tool_choice: { type: "auto" },
+          });
+
+          const text = response.content
+            .filter((b): b is Anthropic.TextBlock => b.type === "text")
+            .map((b) => b.text)
+            .join("\n")
+            .trim();
+          if (text) reply = reply ? `${reply}\n\n${text}` : text;
+
+          const toolUses = response.content.filter(
+            (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
+          );
+          if (response.stop_reason !== "tool_use" || !toolUses.length) break;
+          if (round === MAX_TOOL_ROUNDS) {
+            reply = reply || "I ran out of exploration budget this turn - ask me to continue.";
+            break;
+          }
+
+          messages.push({ role: "assistant", content: response.content });
+          const results: Anthropic.ToolResultBlockParam[] = [];
+          for (const use of toolUses) {
+            const input = use.input as Record<string, unknown>;
+            send({ type: "activity", ...describeTool(use.name, input) });
+            let result: string;
+            let isError = false;
+            try {
+              result = await runTool(use.name, input, plan.id);
+            } catch (e) {
+              result = `Tool failed: ${(e as Error).message}`;
+              isError = true;
+            }
+            results.push({
+              type: "tool_result",
+              tool_use_id: use.id,
+              content: result,
+              ...(isError ? { is_error: true } : {}),
+            });
+          }
+          messages.push({ role: "user", content: results });
         }
-        results.push({
-          type: "tool_result",
-          tool_use_id: use.id,
-          content: result,
-          ...(isError ? { is_error: true } : {}),
+
+        // Persist the audit transcript (chat text only - the tool traffic is
+        // reproducible from the plan/mockup rows it produced).
+        const existing = await db.query.planSessions.findFirst({
+          where: eq(schema.planSessions.planId, plan.id),
         });
+        const newTurns = [
+          { role: "user", content: body.message, author: userEmail },
+          { role: "assistant", content: reply },
+        ];
+        if (existing) {
+          await db
+            .update(schema.planSessions)
+            .set({
+              transcript: [...(existing.transcript as unknown[]), ...newTurns],
+              updatedAt: new Date(),
+            })
+            .where(eq(schema.planSessions.id, existing.id));
+        } else {
+          await db
+            .insert(schema.planSessions)
+            .values({ planId: plan.id, transcript: newTurns });
+        }
+
+        const updated = await db.query.plans.findFirst({
+          where: eq(schema.plans.id, plan.id),
+          with: { mockups: true },
+        });
+
+        send({
+          type: "done",
+          reply: reply || "(no reply)",
+          plan: updated && {
+            title: updated.title,
+            sections: updated.sections,
+            citations: updated.citations,
+            mockups: updated.mockups.map((m) => ({ id: m.id, caption: m.caption })),
+          },
+        });
+      } catch (e) {
+        send({ type: "error", error: `Claude call failed: ${(e as Error).message}` });
+      } finally {
+        controller.close();
       }
-      messages.push({ role: "user", content: results });
-    }
-  } catch (e) {
-    return NextResponse.json(
-      { error: `Claude call failed: ${(e as Error).message}` },
-      { status: 502 }
-    );
-  }
-
-  // Persist the audit transcript (chat text only - the tool traffic is
-  // reproducible from the plan/mockup rows it produced).
-  const existing = await db.query.planSessions.findFirst({
-    where: eq(schema.planSessions.planId, plan.id),
-  });
-  const newTurns = [
-    { role: "user", content: body.message, author: session.user.email },
-    { role: "assistant", content: reply },
-  ];
-  if (existing) {
-    await db
-      .update(schema.planSessions)
-      .set({
-        transcript: [...(existing.transcript as unknown[]), ...newTurns],
-        updatedAt: new Date(),
-      })
-      .where(eq(schema.planSessions.id, existing.id));
-  } else {
-    await db
-      .insert(schema.planSessions)
-      .values({ planId: plan.id, transcript: newTurns });
-  }
-
-  const updated = await db.query.plans.findFirst({
-    where: eq(schema.plans.id, plan.id),
-    with: { mockups: true },
+    },
   });
 
-  return NextResponse.json({
-    reply: reply || "(no reply)",
-    plan: updated && {
-      title: updated.title,
-      sections: updated.sections,
-      citations: updated.citations,
-      mockups: updated.mockups.map((m) => ({ id: m.id, caption: m.caption })),
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-cache",
     },
   });
 }
