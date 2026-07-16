@@ -899,9 +899,22 @@ a.tile:hover {
   border-color: var(--border);
 }
 .tag-chip-warn {
-  color: var(--warn);
-  border-color: var(--warn);
-  background: transparent;
+  color: #fff;
+  border-color: #b3720a;
+  background: #c07d0b;
+  font-weight: 700;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tag-chip-warn {
+    background: #a06808;
+    border-color: #c07d0b;
+    color: #fff7ea;
+  }
+}
+:root[data-theme="dark"] .tag-chip-warn {
+  background: #a06808;
+  border-color: #c07d0b;
+  color: #fff7ea;
 }
 .tile-foot {
   display: flex;
