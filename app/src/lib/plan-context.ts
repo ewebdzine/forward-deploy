@@ -5,7 +5,11 @@ import {
   softwareDocsPath,
 } from "@/lib/source-control";
 import { buildIndexMarkdown, listSopDepartments, listSops } from "@/lib/sops";
-import { PLAN_SECTIONS, sectionLabel } from "@/lib/plan-sections";
+import {
+  PLAN_SECTIONS,
+  parseOpenQuestionsDetailed,
+  sectionLabel,
+} from "@/lib/plan-sections";
 
 const CANONIFY_BUDGET = 50_000;
 const PROFILE_BUDGET = 15_000;
@@ -102,11 +106,24 @@ export function buildPlanStateBlock(plan: {
     return `### ${s.label} [${s.key}]${s.required ? " (required)" : ""}\n${body || "(empty)"}`;
   }).join("\n\n");
 
+  const parsedQs = parseOpenQuestionsDetailed(plan.sections);
+  const parsedView = parsedQs.length
+    ? parsedQs
+        .map(
+          (q, i) =>
+            `${i + 1}. [${q.audience === "dev" ? "dev team" : "FOR THE MANAGER"}] ${q.text.slice(0, 140)}`
+        )
+        .join("\n")
+    : "(none)";
+
   return `The CURRENT state of the plan document (authoritative - build on this, don't restart):
 
 Title: ${plan.title || "(untitled)"}
 
 ${sections}
+
+OPEN QUESTIONS AS THE APP PARSES THEM (this exact list, with these audiences, is what the manager's UI shows right now - trust THIS over your memory of the conversation; if any item here was already resolved in chat, you MUST rewrite open_questions via update_plan to remove it):
+${parsedView}
 
 Citations recorded: ${plan.citations.length ? plan.citations.join("; ") : "(none)"}
 Mockups attached: ${

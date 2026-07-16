@@ -371,10 +371,20 @@ export async function POST(req: Request) {
         // with whatever it just said. Prompts alone proved insufficient.
         if (!didUpdatePlan) {
           send({ type: "activity", kind: "plan", label: "Checking the plan document is in sync" });
+          const current = await db.query.plans.findFirst({
+            where: eq(schema.plans.id, plan.id),
+          });
+          const parsedNow = current
+            ? parseOpenQuestionsDetailed(current.sections)
+                .map(
+                  (q, i) =>
+                    `${i + 1}. [${q.audience === "dev" ? "dev team" : "FOR THE MANAGER"}] ${q.text.slice(0, 140)}`
+                )
+                .join("\n")
+            : "(unknown)";
           messages.push({
             role: "user",
-            content:
-              "SYSTEM CHECK: you made no update_plan call this turn. If this exchange resolved, reclassified, or raised any open question - or changed anything the plan document should reflect - call update_plan NOW to sync it (open_questions must list only currently-open bullets, with '(dev team)' markers where the developers own the answer). If truly nothing changed, reply 'no changes'.",
+            content: `SYSTEM CHECK: you made no update_plan call this turn. The document's open_questions currently parses as:\n${parsedNow || "(none)"}\n\nCompare that against the conversation. If any listed item was already answered/resolved in chat, or an audience tag is wrong, or something new was raised, call update_plan NOW with the corrected complete open_questions list (only still-open bullets, '(dev team)' markers where developers own the answer). If the list is genuinely accurate as shown, reply 'no changes'.`,
           });
           await runRounds(3, false);
         }
@@ -434,7 +444,11 @@ export async function POST(req: Request) {
 
         send({
           type: "done",
-          reply: reply || "(no reply)",
+          reply:
+            reply ||
+            (didUpdatePlan
+              ? "Done - the plan document is updated."
+              : "Nothing needed changing."),
           plan: updated && {
             title: updated.title,
             sections: updated.sections,
