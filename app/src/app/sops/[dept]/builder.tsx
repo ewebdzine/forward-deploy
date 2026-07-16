@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import ActivityIcon from "@/components/activity-icon";
 import { commitSop } from "../actions";
 
 type ChatTurn = { role: "user" | "assistant"; content: string };
@@ -199,7 +200,7 @@ export default function SopBuilder({
                 className="draft-chip"
                 onClick={() => setDrawerOpen(true)}
               >
-                &#128196; {title || "SOP draft"} - view
+                <ActivityIcon kind="doc" /> {title || "SOP draft"} - view
               </button>
             ) : (
               <span className="muted" style={{ fontSize: "0.82rem" }}>

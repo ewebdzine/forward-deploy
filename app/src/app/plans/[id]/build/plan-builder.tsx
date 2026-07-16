@@ -5,6 +5,7 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PLAN_SECTIONS } from "@/lib/plan-sections";
+import ActivityIcon from "@/components/activity-icon";
 
 type ChatTurn = { role: "user" | "assistant"; content: string };
 
@@ -18,19 +19,6 @@ type PlanState = {
 function filledCount(sections: Record<string, string>): number {
   return PLAN_SECTIONS.filter((s) => (sections[s.key] ?? "").trim()).length;
 }
-
-const ACTIVITY_ICONS: Record<string, string> = {
-  context: "\u{1F5FA}️", // map
-  think: "\u{1F4AD}", // thought balloon
-  sop: "\u{1F4CB}", // clipboard
-  canon: "\u{1F4D8}", // blue book
-  software: "\u{1F4E6}", // package
-  code: "\u{1F4C4}", // page
-  search: "\u{1F50D}", // magnifier
-  browse: "\u{1F4C1}", // folder
-  plan: "\u{1F4DD}", // memo
-  mockup: "\u{1F3A8}", // palette
-};
 
 type Activity = { kind: string; label: string };
 
@@ -223,7 +211,7 @@ export default function PlanBuilder({
                   key={`${activities.length}-${i}`}
                   className={`activity-line${i === shown.length - 1 ? " current" : ""}`}
                 >
-                  {ACTIVITY_ICONS[a.kind] ?? "\u{1F4C4}"} {a.label}
+                  <ActivityIcon kind={a.kind} /> {a.label}
                 </div>
               ))}
             </div>
@@ -251,7 +239,7 @@ export default function PlanBuilder({
               className="draft-chip"
               onClick={() => setDrawerOpen(true)}
             >
-              &#128203; Plan document - {filled}/{PLAN_SECTIONS.length} sections
+              <ActivityIcon kind="sop" /> Plan document - {filled}/{PLAN_SECTIONS.length} sections
               {plan.mockups.length > 0 && ` - ${plan.mockups.length} mockup${plan.mockups.length === 1 ? "" : "s"}`}
             </button>
             <button type="button" onClick={() => send()} disabled={busy || !input.trim()}>

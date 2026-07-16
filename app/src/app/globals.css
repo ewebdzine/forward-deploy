@@ -531,10 +531,22 @@ tr:last-child td {
   color: var(--muted);
   opacity: 0.75;
   animation: activity-in 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
 }
 .activity-line.current {
   color: var(--text);
   opacity: 1;
+}
+/* monotone icons stay quiet medium-gray in both themes, even on the current line */
+.mono-icon {
+  color: var(--muted);
+  flex-shrink: 0;
+  vertical-align: -2px;
+}
+.draft-chip .mono-icon {
+  margin-right: 0.15rem;
 }
 @keyframes activity-in {
   from {
