@@ -107,9 +107,10 @@ export default async function PlanViewPage({
               )}
               {openQuestions.length > 0 && forManager === 0 && (
                 <>
-                  Every question for you is answered - the {forDev} open item
-                  {forDev === 1 ? "" : "s"} are the developers&apos; to settle
-                  during review.
+                  Every question for you is answered. {forDev} implementation
+                  detail{forDev === 1 ? "" : "s"} ride{forDev === 1 ? "s" : ""}{" "}
+                  along for the dev team to settle during review - nothing is
+                  waiting on you.
                 </>
               )}
             </p>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/access";
 import { db, schema } from "@/db";
-import { PLAN_SECTIONS, filledSectionCount, parseOpenQuestions } from "@/lib/plan-sections";
+import { PLAN_SECTIONS, filledSectionCount, parseOpenQuestionsDetailed } from "@/lib/plan-sections";
 import { listSoftwareCanons, matchPlanSoftware } from "@/lib/software";
 
 export const metadata = { title: "Plans - Forward Deploy" };
@@ -129,7 +129,9 @@ export default async function PlansPage({
         <div className="tile-grid tile-grid-wide">
           {plans.map((p) => {
             const filled = filledSectionCount(p.sections);
-            const openQ = parseOpenQuestions(p.sections).length;
+            const questions = parseOpenQuestionsDetailed(p.sections);
+            const forManager = questions.filter((q) => q.audience === "manager").length;
+            const forDev = questions.length - forManager;
             const software = matchPlanSoftware(p, softwareCanons).slice(0, 5);
             return (
               <Link className="tile" href={`/plans/${p.id}`} key={p.id}>
@@ -145,9 +147,14 @@ export default async function PlansPage({
                     <span className="tag-chip">
                       {filled}/{PLAN_SECTIONS.length} sections
                     </span>
-                    {openQ > 0 && (
+                    {forManager > 0 && (
                       <span className="tag-chip tag-chip-warn">
-                        {openQ} open question{openQ === 1 ? "" : "s"}
+                        {forManager} question{forManager === 1 ? "" : "s"} for the planner
+                      </span>
+                    )}
+                    {forDev > 0 && (
+                      <span className="tag-chip">
+                        {forDev} for dev team
                       </span>
                     )}
                     <span className="tag-chip">
