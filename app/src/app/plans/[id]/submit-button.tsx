@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { submitPlan } from "../actions";
 
@@ -27,6 +28,9 @@ export default function SubmitPlanButton({ planId }: { planId: string }) {
         <button type="button" onClick={submit} disabled={busy}>
           Submit to the dev team
         </button>
+        <Link className="button-secondary" href={`/plans/${planId}/build`}>
+          Continue building
+        </Link>
         {error && <span className="badge-warn">{error}</span>}
       </div>
       <p className="muted" style={{ marginBottom: 0 }}>

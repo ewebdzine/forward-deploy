@@ -43,21 +43,24 @@ export default async function PlanViewPage({
 
   return (
     <main>
-      <h1>{plan.title}</h1>
-      <p className="muted">
-        <Link href="/plans">&larr; all plans</Link>
-        {" - "}
-        {plan.department.name} / {plan.author.name ?? plan.author.email} -{" "}
-        <span className={`status-chip status-${plan.status}`}>
-          {plan.status.replace(/_/g, " ")}
-        </span>
-        {editable && (
-          <>
+      <div className="page-head">
+        <div>
+          <h1>{plan.title}</h1>
+          <p className="muted" style={{ margin: 0 }}>
+            <Link href="/plans">&larr; all plans</Link>
             {" - "}
-            <Link href={`/plans/${plan.id}/build`}>continue building</Link>
-          </>
+            {plan.department.name} / {plan.author.name ?? plan.author.email} -{" "}
+            <span className={`status-chip status-${plan.status}`}>
+              {plan.status.replace(/_/g, " ")}
+            </span>
+          </p>
+        </div>
+        {editable && (
+          <Link className="button-secondary" href={`/plans/${plan.id}/build`}>
+            Continue building
+          </Link>
         )}
-      </p>
+      </div>
 
       {PLAN_SECTIONS.map((s) => {
         const body = (plan.sections[s.key] ?? "").trim();
