@@ -39,10 +39,16 @@ export default async function PlanViewPage({
   const openQuestions = parseOpenQuestionsDetailed(plan.sections);
   const forManager = openQuestions.filter((q) => q.audience === "manager").length;
   const forDev = openQuestions.length - forManager;
-  const totalQuestions = plan.resolvedQuestions + openQuestions.length;
-  const answeredPct =
-    totalQuestions > 0
-      ? Math.round((plan.resolvedQuestions / totalQuestions) * 100)
+  const managerTotal = plan.resolvedQuestions + forManager;
+  const devTotal = plan.resolvedDevQuestions + forDev;
+  const totalQuestions = managerTotal + devTotal;
+  const managerPct =
+    managerTotal > 0
+      ? Math.round((plan.resolvedQuestions / managerTotal) * 100)
+      : 0;
+  const devPct =
+    devTotal > 0
+      ? Math.round((plan.resolvedDevQuestions / devTotal) * 100)
       : 0;
   const transitions = isDev ? devTransitionsFrom(plan.status) : [];
   const thread = plan.messages.sort(
@@ -114,19 +120,35 @@ export default async function PlanViewPage({
                 </>
               )}
             </p>
-            {totalQuestions > 0 && (
+            {managerTotal > 0 && (
               <>
-                <div className="progress" title={`${plan.resolvedQuestions} of ${totalQuestions} answered`}>
+                <p className="progress-label">
+                  Your questions - {plan.resolvedQuestions} of {managerTotal}{" "}
+                  answered
+                </p>
+                <div className="progress">
                   <div
                     className={`progress-bar${forManager > 0 ? " striped" : ""}`}
-                    style={{ width: `${answeredPct}%` }}
+                    style={{ width: `${managerPct}%` }}
                   />
                 </div>
-                <p className="muted" style={{ fontSize: "0.78rem", margin: "0.3rem 0 0.75rem" }}>
-                  {plan.resolvedQuestions} of {totalQuestions} answered ({answeredPct}%)
-                </p>
               </>
             )}
+            {devTotal > 0 && (
+              <>
+                <p className="progress-label">
+                  Dev team&apos;s questions - {plan.resolvedDevQuestions} of{" "}
+                  {devTotal} settled
+                </p>
+                <div className="progress">
+                  <div
+                    className={`progress-bar progress-bar-dev${forDev > 0 ? " striped" : ""}`}
+                    style={{ width: `${devPct}%`, minWidth: devPct === 0 ? 0 : undefined }}
+                  />
+                </div>
+              </>
+            )}
+            {totalQuestions > 0 && <div style={{ height: "0.6rem" }} />}
             {forManager > 0 ? (
               <Link className="button-secondary" href={`/plans/${plan.id}/build`}>
                 Continue answering questions

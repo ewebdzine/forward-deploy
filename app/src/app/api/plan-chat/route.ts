@@ -188,10 +188,19 @@ async function runTool(
         ...((input.sections as Record<string, string>) ?? {}),
       };
       // A shrinking open-questions list means questions got resolved - feed
-      // the answered side of the progress bar.
-      const before = parseOpenQuestionsDetailed(plan.sections).length;
-      const after = parseOpenQuestionsDetailed(sections).length;
-      const resolvedDelta = Math.max(0, before - after);
+      // the answered side of the progress bars, per audience.
+      const before = parseOpenQuestionsDetailed(plan.sections);
+      const after = parseOpenQuestionsDetailed(sections);
+      const count = (list: typeof before, aud: "manager" | "dev") =>
+        list.filter((q) => q.audience === aud).length;
+      const resolvedDelta = Math.max(
+        0,
+        count(before, "manager") - count(after, "manager")
+      );
+      const resolvedDevDelta = Math.max(
+        0,
+        count(before, "dev") - count(after, "dev")
+      );
       await db
         .update(schema.plans)
         .set({
@@ -204,6 +213,12 @@ async function runTool(
             : {}),
           ...(resolvedDelta > 0
             ? { resolvedQuestions: plan.resolvedQuestions + resolvedDelta }
+            : {}),
+          ...(resolvedDevDelta > 0
+            ? {
+                resolvedDevQuestions:
+                  plan.resolvedDevQuestions + resolvedDevDelta,
+              }
             : {}),
           updatedAt: new Date(),
         })

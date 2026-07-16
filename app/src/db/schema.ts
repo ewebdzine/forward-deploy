@@ -123,9 +123,11 @@ export const plans = pgTable("plan", {
   sections: jsonb("sections").$type<PlanSections>().notNull().default({}),
   // Canon paths + file:line references the plan cites, for pull-plan's reading list.
   citations: jsonb("citations").$type<string[]>().notNull().default([]),
-  // Open questions resolved so far - the answered side of the progress bar
-  // (incremented whenever an update_plan shrinks the open_questions list).
+  // Open questions resolved so far, split by audience - the answered side of
+  // the progress bars (incremented when update_plan shrinks each audience's
+  // share of the open_questions list).
   resolvedQuestions: integer("resolved_questions").notNull().default(0),
+  resolvedDevQuestions: integer("resolved_dev_questions").notNull().default(0),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
 });
