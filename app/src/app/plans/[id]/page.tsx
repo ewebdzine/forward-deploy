@@ -39,6 +39,11 @@ export default async function PlanViewPage({
   const openQuestions = parseOpenQuestionsDetailed(plan.sections);
   const forManager = openQuestions.filter((q) => q.audience === "manager").length;
   const forDev = openQuestions.length - forManager;
+  const totalQuestions = plan.resolvedQuestions + openQuestions.length;
+  const answeredPct =
+    totalQuestions > 0
+      ? Math.round((plan.resolvedQuestions / totalQuestions) * 100)
+      : 0;
   const transitions = isDev ? devTransitionsFrom(plan.status) : [];
   const thread = plan.messages.sort(
     (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
@@ -80,7 +85,9 @@ export default async function PlanViewPage({
             </h2>
             <p className="muted">
               {openQuestions.length === 0 &&
-                "Nothing is waiting on an answer."}
+                (totalQuestions > 0
+                  ? `All ${totalQuestions} answered - nothing is waiting.`
+                  : "Nothing is waiting on an answer.")}
               {openQuestions.length > 0 && forManager > 0 && (
                 <>
                   <strong>{forManager} for you</strong>
@@ -92,6 +99,19 @@ export default async function PlanViewPage({
                 <>All {forDev} are flagged for the dev team to decide.</>
               )}
             </p>
+            {totalQuestions > 0 && (
+              <>
+                <div className="progress" title={`${plan.resolvedQuestions} of ${totalQuestions} answered`}>
+                  <div
+                    className={`progress-bar${openQuestions.length > 0 ? " striped" : ""}`}
+                    style={{ width: `${answeredPct}%` }}
+                  />
+                </div>
+                <p className="muted" style={{ fontSize: "0.78rem", margin: "0.3rem 0 0.75rem" }}>
+                  {plan.resolvedQuestions} of {totalQuestions} answered ({answeredPct}%)
+                </p>
+              </>
+            )}
             {forManager > 0 && (
               <Link className="button-secondary" href={`/plans/${plan.id}/build`}>
                 Continue answering questions

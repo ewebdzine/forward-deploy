@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { db, schema } from "@/db";
 import { canAccessDepartment } from "@/lib/access";
 import { buildPlanBreadthBlock, buildPlanStateBlock } from "@/lib/plan-context";
-import { PLAN_SECTIONS } from "@/lib/plan-sections";
+import { PLAN_SECTIONS, parseOpenQuestionsDetailed } from "@/lib/plan-sections";
 import { getSourceControl, softwareDocsPath, sopPath } from "@/lib/source-control";
 
 export const dynamic = "force-dynamic";
@@ -186,6 +186,11 @@ async function runTool(
         ...plan.sections,
         ...((input.sections as Record<string, string>) ?? {}),
       };
+      // A shrinking open-questions list means questions got resolved - feed
+      // the answered side of the progress bar.
+      const before = parseOpenQuestionsDetailed(plan.sections).length;
+      const after = parseOpenQuestionsDetailed(sections).length;
+      const resolvedDelta = Math.max(0, before - after);
       await db
         .update(schema.plans)
         .set({
@@ -195,6 +200,9 @@ async function runTool(
           sections,
           ...(Array.isArray(input.citations)
             ? { citations: (input.citations as string[]).map(String) }
+            : {}),
+          ...(resolvedDelta > 0
+            ? { resolvedQuestions: plan.resolvedQuestions + resolvedDelta }
             : {}),
           updatedAt: new Date(),
         })
