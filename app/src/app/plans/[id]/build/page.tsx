@@ -26,10 +26,28 @@ export default async function PlanBuildPage({
     redirect(`/plans/${plan.id}`);
   }
 
+  // Restore the conversation from the audit transcript so resuming feels
+  // continuous (history is otherwise browser-memory only).
+  const planSession = await db.query.planSessions.findFirst({
+    where: eq(schema.planSessions.planId, plan.id),
+  });
+  const initialMessages = ((planSession?.transcript as
+    | { role: string; content: string }[]
+    | undefined) ?? [])
+    .filter(
+      (t) =>
+        (t.role === "user" || t.role === "assistant") &&
+        typeof t.content === "string" &&
+        t.content.trim()
+    )
+    .slice(-24)
+    .map((t) => ({ role: t.role as "user" | "assistant", content: t.content }));
+
   return (
     <PlanBuilder
       planId={plan.id}
       departmentName={plan.department.name}
+      initialMessages={initialMessages}
       initial={{
         title: plan.title,
         sections: plan.sections,

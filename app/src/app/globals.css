@@ -441,6 +441,52 @@ tr:last-child td {
   gap: 0.6rem;
 }
 
+/* open-questions checklist at the top of the plan chat */
+.oq-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+}
+.oq-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+  margin-bottom: 0.35rem;
+}
+.oq-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.oq-item {
+  background: none;
+  border: none;
+  color: var(--text);
+  padding: 0.25rem 0.25rem;
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  width: 100%;
+}
+.oq-item::before {
+  content: "\2610  ";
+  color: var(--accent);
+}
+.oq-item:hover {
+  background: var(--surface-2);
+  opacity: 1;
+}
+
 /* live exploration feed under the typing dots */
 .activity-feed {
   display: flex;

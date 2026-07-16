@@ -34,16 +34,29 @@ const ACTIVITY_ICONS: Record<string, string> = {
 
 type Activity = { kind: string; label: string };
 
+/** Bullet lines from the open_questions section markdown ("none" -> []). */
+function parseOpenQuestions(sections: Record<string, string>): string[] {
+  const body = (sections.open_questions ?? "").trim();
+  if (!body || /^none\b/i.test(body)) return [];
+  return body
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*(?:[-*]|\d+[.)])\s*/, "").trim())
+    .filter((l, i, arr) => l.length > 8 && (arr.length > 1 || /[-*\d]/.test(body[0]) || i === 0))
+    .map((l) => l.replace(/\*\*/g, ""));
+}
+
 export default function PlanBuilder({
   planId,
   departmentName,
   initial,
+  initialMessages = [],
 }: {
   planId: string;
   departmentName: string;
   initial: PlanState;
+  initialMessages?: ChatTurn[];
 }) {
-  const [messages, setMessages] = useState<ChatTurn[]>([]);
+  const [messages, setMessages] = useState<ChatTurn[]>(initialMessages);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [plan, setPlan] = useState<PlanState>(initial);
@@ -57,8 +70,8 @@ export default function PlanBuilder({
     });
   }
 
-  async function send() {
-    const message = input.trim();
+  async function send(preset?: string) {
+    const message = (preset ?? input).trim();
     if (!message || busy) return;
     setInput("");
     setBusy(true);
@@ -132,6 +145,7 @@ export default function PlanBuilder({
   }
 
   const filled = filledCount(plan.sections);
+  const openQuestions = parseOpenQuestions(plan.sections);
 
   return (
     <div className="chat-page">
@@ -149,6 +163,39 @@ export default function PlanBuilder({
 
       <div className="chat-scroll" ref={scrollRef}>
         <div className="chat-inner">
+          {openQuestions.length > 0 && !busy && (
+            <div className="oq-card">
+              <div className="oq-head">
+                Open questions on this plan ({openQuestions.length})
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={() =>
+                    send(
+                      "Let's work through the open questions on this plan - ask me the most important one first, one at a time."
+                    )
+                  }
+                >
+                  Work through them
+                </button>
+              </div>
+              <ul>
+                {openQuestions.map((q) => (
+                  <li key={q}>
+                    <button
+                      type="button"
+                      className="oq-item"
+                      onClick={() =>
+                        send(`Let's answer this open question: ${q}`)
+                      }
+                    >
+                      {q}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {messages.map((m, i) => (
             <div key={i} className={`msg msg-${m.role}`}>
               {m.content}
@@ -199,7 +246,7 @@ export default function PlanBuilder({
               &#128203; Plan document - {filled}/{PLAN_SECTIONS.length} sections
               {plan.mockups.length > 0 && ` - ${plan.mockups.length} mockup${plan.mockups.length === 1 ? "" : "s"}`}
             </button>
-            <button type="button" onClick={send} disabled={busy || !input.trim()}>
+            <button type="button" onClick={() => send()} disabled={busy || !input.trim()}>
               Send
             </button>
           </div>
