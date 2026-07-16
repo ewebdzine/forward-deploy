@@ -11,7 +11,12 @@ import {
 } from "@/lib/plan-sections";
 import ActivityIcon from "@/components/activity-icon";
 
-type ChatTurn = { role: "user" | "assistant"; content: string };
+type ChatTurn = {
+  role: "user" | "assistant";
+  content: string;
+  /** Display name when the turn belongs to someone other than the viewer. */
+  author?: string;
+};
 
 type PlanState = {
   title: string;
@@ -262,6 +267,7 @@ export default function PlanBuilder({
               </div>
             ) : (
               <div key={i} className="msg msg-user">
+                {m.author && <span className="msg-author">{m.author}</span>}
                 {m.content}
               </div>
             )

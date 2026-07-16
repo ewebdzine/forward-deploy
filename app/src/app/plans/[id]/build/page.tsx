@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { requireSession, canAccessDepartment } from "@/lib/access";
 import { db, schema } from "@/db";
 import PlanBuilder from "./plan-builder";
@@ -27,12 +27,14 @@ export default async function PlanBuildPage({
   }
 
   // Restore the conversation from the audit transcript so resuming feels
-  // continuous (history is otherwise browser-memory only).
+  // continuous (history is otherwise browser-memory only). Turns by someone
+  // other than the viewer carry the author's name - a plan can be co-authored
+  // by the manager and a developer across a changes_requested round.
   const planSession = await db.query.planSessions.findFirst({
     where: eq(schema.planSessions.planId, plan.id),
   });
-  const initialMessages = ((planSession?.transcript as
-    | { role: string; content: string }[]
+  const rawTurns = ((planSession?.transcript as
+    | { role: string; content: string; author?: string }[]
     | undefined) ?? [])
     .filter(
       (t) =>
@@ -40,8 +42,29 @@ export default async function PlanBuildPage({
         typeof t.content === "string" &&
         t.content.trim()
     )
-    .slice(-24)
-    .map((t) => ({ role: t.role as "user" | "assistant", content: t.content }));
+    .slice(-24);
+
+  const authorEmails = [
+    ...new Set(
+      rawTurns
+        .map((t) => t.author)
+        .filter((a): a is string => Boolean(a) && a !== session.user.email)
+    ),
+  ];
+  const authors = authorEmails.length
+    ? await db.query.users.findMany({
+        where: inArray(schema.users.email, authorEmails),
+      })
+    : [];
+  const nameByEmail = new Map(authors.map((u) => [u.email, u.name ?? u.email]));
+
+  const initialMessages = rawTurns.map((t) => ({
+    role: t.role as "user" | "assistant",
+    content: t.content,
+    ...(t.author && t.author !== session.user.email
+      ? { author: nameByEmail.get(t.author) ?? t.author }
+      : {}),
+  }));
 
   return (
     <PlanBuilder
