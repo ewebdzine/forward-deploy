@@ -18,6 +18,7 @@ type PlanState = {
   sections: Record<string, string>;
   citations: string[];
   mockups: { id: string; caption: string }[];
+  resolvedQuestions: number;
 };
 
 const filledCount = filledSectionCount;
@@ -267,14 +268,29 @@ export default function PlanBuilder({
             disabled={busy}
           />
           <div className="composer-foot">
-            <button
-              type="button"
-              className="draft-chip"
-              onClick={() => setDrawerOpen(true)}
-            >
-              <ActivityIcon kind="sop" /> Plan document - {filled}/{PLAN_SECTIONS.length} sections
-              {plan.mockups.length > 0 && ` - ${plan.mockups.length} mockup${plan.mockups.length === 1 ? "" : "s"}`}
-            </button>
+            <span style={{ display: "inline-flex", gap: "0.4rem", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="draft-chip draft-chip-muted"
+                onClick={() => setDrawerOpen(true)}
+              >
+                <ActivityIcon kind="sop" /> Plan document - {filled}/{PLAN_SECTIONS.length} sections
+                {plan.mockups.length > 0 && ` - ${plan.mockups.length} mockup${plan.mockups.length === 1 ? "" : "s"}`}
+              </button>
+              {plan.resolvedQuestions + openQuestions.length > 0 && (
+                <button
+                  type="button"
+                  className={`draft-chip ${openQuestions.length > 0 ? "draft-chip-warn" : "draft-chip-done"}`}
+                  onClick={() =>
+                    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+                  }
+                >
+                  {openQuestions.length > 0
+                    ? `${openQuestions.length} question${openQuestions.length === 1 ? "" : "s"} left - ${plan.resolvedQuestions} of ${plan.resolvedQuestions + openQuestions.length} answered`
+                    : `All ${plan.resolvedQuestions} questions answered`}
+                </button>
+              )}
+            </span>
             <button type="button" onClick={() => send()} disabled={busy || !input.trim()}>
               Send
             </button>

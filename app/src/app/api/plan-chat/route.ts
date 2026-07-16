@@ -392,6 +392,7 @@ export async function POST(req: Request) {
             sections: updated.sections,
             citations: updated.citations,
             mockups: updated.mockups.map((m) => ({ id: m.id, caption: m.caption })),
+            resolvedQuestions: updated.resolvedQuestions,
           },
         });
       } catch (e) {

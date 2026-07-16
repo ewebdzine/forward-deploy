@@ -53,6 +53,7 @@ export default async function PlanBuildPage({
         sections: plan.sections,
         citations: plan.citations,
         mockups: plan.mockups.map((m) => ({ id: m.id, caption: m.caption })),
+        resolvedQuestions: plan.resolvedQuestions,
       }}
     />
   );

@@ -684,6 +684,22 @@ tr:last-child td {
   font-size: 0.85rem;
   cursor: pointer;
 }
+.draft-chip-muted {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--muted);
+}
+.draft-chip-warn {
+  background: #c07d0b;
+  border-color: #b3720a;
+  color: #fff;
+  font-weight: 600;
+}
+.draft-chip-done {
+  background: transparent;
+  border-color: var(--ok);
+  color: var(--ok);
+}
 
 /* ---------- right slide-over drawer ---------- */
 
