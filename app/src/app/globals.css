@@ -973,6 +973,38 @@ a.stat-card:hover {
   color: var(--muted);
 }
 
+/* filter pill rows (plans page) */
+.filter-row {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.6rem;
+}
+.filter-pill {
+  display: inline-block;
+  padding: 0.28rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.filter-pill:hover {
+  color: var(--text);
+  border-color: var(--muted);
+  text-decoration: none;
+}
+.filter-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.filter-pill.active:hover {
+  color: #fff;
+}
+
 .section-head {
   display: flex;
   align-items: center;

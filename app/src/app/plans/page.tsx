@@ -94,35 +94,35 @@ export default async function PlansPage({
           + New plan
         </Link>
       </div>
-      <p className="muted" style={{ marginBottom: "0.25rem" }}>
+      <div className="filter-row">
         {FILTERS.map((f) => (
           <Link
             key={f.key}
+            className={`filter-pill${filter === f.key ? " active" : ""}`}
             href={filterUrl(f.key, dept)}
-            style={{ marginRight: "0.75rem", fontWeight: filter === f.key ? 700 : 400 }}
           >
             {f.label}
           </Link>
         ))}
-      </p>
+      </div>
       {visibleDepartments.length > 1 && (
-        <p className="muted">
+        <div className="filter-row">
           <Link
+            className={`filter-pill${!dept ? " active" : ""}`}
             href={filterUrl(filter, "")}
-            style={{ marginRight: "0.75rem", fontWeight: !dept ? 700 : 400 }}
           >
             all departments
           </Link>
           {visibleDepartments.map((d) => (
             <Link
               key={d.slug}
+              className={`filter-pill${dept === d.slug ? " active" : ""}`}
               href={filterUrl(filter, d.slug)}
-              style={{ marginRight: "0.75rem", fontWeight: dept === d.slug ? 700 : 400 }}
             >
               {d.name}
             </Link>
           ))}
-        </p>
+        </div>
       )}
 
       {plans.length ? (
