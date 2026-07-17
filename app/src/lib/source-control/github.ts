@@ -31,6 +31,9 @@ export class GitHubProvider implements SourceControlProvider {
         name: e.name,
         path: e.path,
         type: e.type as "file" | "dir",
+        ...(e.type === "file" && typeof e.size === "number"
+          ? { size: e.size }
+          : {}),
       }))
       .sort((a, b) =>
         a.type === b.type ? a.name.localeCompare(b.name) : a.type === "dir" ? -1 : 1

@@ -9,6 +9,7 @@ const API = "https://api.bitbucket.org/2.0";
 type BbSrcEntry = {
   type: "commit_file" | "commit_directory";
   path: string;
+  size?: number;
 };
 
 type BbPage<T> = { values: T[]; next?: string };
@@ -67,6 +68,9 @@ export class BitbucketProvider implements SourceControlProvider {
           name: e.path.split("/").pop() ?? e.path,
           path: e.path,
           type: e.type === "commit_directory" ? "dir" : "file",
+          ...(e.type === "commit_file" && typeof e.size === "number"
+            ? { size: e.size }
+            : {}),
         });
       }
       url = page.next;

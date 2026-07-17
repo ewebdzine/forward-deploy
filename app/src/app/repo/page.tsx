@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/access";
 import { getSourceControl, repoDescription } from "@/lib/source-control";
+import RepoTable from "@/components/repo-table";
 
 export const metadata = { title: "Repo - Forward Deploy" };
 
@@ -20,17 +21,32 @@ export default async function RepoPage({
     error = (e as Error).message;
   }
 
-  const parent = path.includes("/")
-    ? path.slice(0, path.lastIndexOf("/"))
-    : "";
+  const crumbs = path ? path.split("/") : [];
 
   return (
     <main>
       <h1>Repository</h1>
       <p className="muted">
-        {repoDescription()}
-        {path ? ` / ${path}` : ""} - read-only view of the codebase, canons, and
-        SOPs your plans draw from.
+        {repoDescription()} - read-only view of the codebase, canons, and SOPs
+        your plans draw from.
+      </p>
+      <p className="repo-crumbs">
+        <Link href="/repo">{repoDescription().split("@")[0]}</Link>
+        {crumbs.map((part, i) => {
+          const upTo = crumbs.slice(0, i + 1).join("/");
+          return (
+            <span key={upTo}>
+              {" / "}
+              {i === crumbs.length - 1 ? (
+                <strong>{part}</strong>
+              ) : (
+                <Link href={`/repo?path=${encodeURIComponent(upTo)}`}>
+                  {part}
+                </Link>
+              )}
+            </span>
+          );
+        })}
       </p>
 
       {error ? (
@@ -38,34 +54,7 @@ export default async function RepoPage({
           <span className="badge-warn">Could not read the repo:</span> {error}
         </div>
       ) : (
-        <div className="card">
-          <ul className="file-list">
-            {path && (
-              <li>
-                <Link href={`/repo?path=${encodeURIComponent(parent)}`}>
-                  &larr; up
-                </Link>
-              </li>
-            )}
-            {entries!.map((e) =>
-              e.type === "dir" ? (
-                <li key={e.path}>
-                  &#128193;{" "}
-                  <Link href={`/repo?path=${encodeURIComponent(e.path)}`}>
-                    {e.name}/
-                  </Link>
-                </li>
-              ) : (
-                <li key={e.path}>
-                  &#128196;{" "}
-                  <Link href={`/repo/view?path=${encodeURIComponent(e.path)}`}>
-                    {e.name}
-                  </Link>
-                </li>
-              )
-            )}
-          </ul>
-        </div>
+        <RepoTable entries={entries!} path={path} />
       )}
     </main>
   );

@@ -1293,6 +1293,33 @@ a.tile:hover {
   font-size: 0.85em;
 }
 
+/* repo browser (source-host-style table) */
+.repo-crumbs {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 0.6rem;
+}
+.repo-toolbar {
+  margin-bottom: 0.6rem;
+}
+.repo-toolbar input {
+  width: min(340px, 100%);
+}
+.repo-card {
+  padding: 0.25rem 0.5rem;
+}
+.repo-table td {
+  padding: 0.45rem 0.6rem;
+}
+.repo-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.repo-name .mono-icon {
+  color: var(--muted);
+}
+
 .file-list li {
   list-style: none;
   padding: 0.2rem 0;

@@ -2,6 +2,8 @@ export type RepoEntry = {
   name: string;
   path: string;
   type: "file" | "dir";
+  /** File size in bytes when the provider reports it (files only). */
+  size?: number;
 };
 
 export type SearchHit = {
