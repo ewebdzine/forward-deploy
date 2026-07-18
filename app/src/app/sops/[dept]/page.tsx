@@ -18,46 +18,62 @@ export default async function DepartmentSopsPage({
 
   return (
     <main>
-      <h1>{department.name} - SOPs</h1>
-      <p className="muted">
-        <Link href="/sops">&larr; all departments</Link>
-      </p>
-      <div className="card">
-        {sops.length ? (
-          <table>
-            <thead>
-              <tr>
-                <th>Topic</th>
-                <th>Tools</th>
-                <th>Owner</th>
-                <th>Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sops.map((s) => (
-                <tr key={s.path}>
-                  <td>
-                    <Link href={`/sops/${department.slug}/${s.slug}`}>
-                      {s.topic}
-                    </Link>
-                  </td>
-                  <td className="muted">{s.tools.join(", ") || "-"}</td>
-                  <td className="muted">{s.owner || "-"}</td>
-                  <td className="muted">{s.updated || "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="muted">
-            No SOPs yet. Document your first process - each SOP covers one
-            process or tool, and you can create as many as the department needs.
+      <div className="page-head">
+        <div>
+          <h1>{department.name} - SOPs</h1>
+          <p className="muted" style={{ margin: 0 }}>
+            <Link href="/sops">&larr; all departments</Link> - one process per
+            SOP; create as many as the department needs.
           </p>
-        )}
+        </div>
+        <Link className="button-secondary" href={`/sops/${department.slug}/new`}>
+          + New SOP
+        </Link>
       </div>
-      <p>
-        <Link href={`/sops/${department.slug}/new`}>+ New SOP</Link>
-      </p>
+
+      {sops.length ? (
+        <div className="tile-grid">
+          {sops.map((s, i) => (
+            <Link
+              className="tile"
+              href={`/sops/${department.slug}/${s.slug}`}
+              key={s.path}
+            >
+              <div className={`tile-band tile-band-slim band-${i % 4}`}>
+                <span style={{ fontSize: "1.3rem" }}>
+                  {s.topic.slice(0, 1).toUpperCase()}
+                </span>
+              </div>
+              <div className="tile-body">
+                <span className="tile-name">{s.topic}</span>
+                <span className="tile-chips">
+                  {s.tools.slice(0, 3).map((t) => (
+                    <span className="tag-chip" key={t}>
+                      {t}
+                    </span>
+                  ))}
+                  {s.tools.length > 3 && (
+                    <span className="tag-chip">+{s.tools.length - 3}</span>
+                  )}
+                  {s.updated && <span className="tag-chip">{s.updated}</span>}
+                </span>
+                {s.owner && (
+                  <span className="muted" style={{ fontSize: "0.78rem" }}>
+                    {s.owner}
+                  </span>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="card">
+          <p className="muted" style={{ margin: 0 }}>
+            No SOPs yet. Document your first process - describe it to Claude
+            and the draft builds itself.
+          </p>
+        </div>
+      )}
     </main>
   );
 }
