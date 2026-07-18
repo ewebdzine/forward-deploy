@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { requireRole } from "@/lib/access";
 import { db, schema } from "@/db";
+import { buildIndexMarkdown, listSops } from "@/lib/sops";
+import { getSourceControl, sopPath } from "@/lib/source-control";
 import type { Role } from "@/auth";
 
 function slugify(name: string): string {
@@ -47,6 +49,81 @@ export async function inviteUser(formData: FormData) {
       .onConflictDoNothing();
   }
   revalidatePath("/admin/users");
+}
+
+/**
+ * Offboarding: move everything one person owns to their replacement -
+ * rewrites `owner:` frontmatter across their SOPs (committed to the repo,
+ * INDEXes regenerated) and reassigns their plans. The SOP content itself is
+ * already the handover document; this is the bookkeeping.
+ */
+export async function transferOwnership(formData: FormData) {
+  await requireRole("admin");
+  const fromId = String(formData.get("fromUserId") ?? "");
+  const toId = String(formData.get("toUserId") ?? "");
+  if (!fromId || !toId || fromId === toId) return;
+
+  const [from, to] = await Promise.all([
+    db.query.users.findFirst({ where: eq(schema.users.id, fromId) }),
+    db.query.users.findFirst({ where: eq(schema.users.id, toId) }),
+  ]);
+  if (!from || !to) return;
+
+  // Plans: reassign authorship in the database.
+  await db
+    .update(schema.plans)
+    .set({ authorId: to.id })
+    .where(eq(schema.plans.authorId, from.id));
+
+  // Departments: give the replacement the departed person's memberships.
+  const memberships = await db.query.departmentMembers.findMany({
+    where: eq(schema.departmentMembers.userId, from.id),
+  });
+  for (const m of memberships) {
+    await db
+      .insert(schema.departmentMembers)
+      .values({ userId: to.id, departmentId: m.departmentId })
+      .onConflictDoNothing();
+  }
+
+  // SOPs: rewrite owner frontmatter across the repo, one commit per file,
+  // then regenerate each touched department's INDEX.
+  const provider = getSourceControl();
+  const oldNames = [from.name, from.email].filter(Boolean) as string[];
+  const newOwner = to.name ?? to.email;
+  const departments = await db.query.departments.findMany();
+  for (const dept of departments) {
+    const sops = await listSops(dept.slug).catch(() => []);
+    let touched = false;
+    for (const sop of sops) {
+      const owned = oldNames.some((n) =>
+        sop.owner.toLowerCase().includes(n.toLowerCase())
+      );
+      if (!owned) continue;
+      const updated = sop.content.replace(/^owner:.*$/m, `owner: ${newOwner}`);
+      if (updated === sop.content) continue;
+      await provider.commitFile(
+        sop.path,
+        updated,
+        `Transfer SOP ownership: ${from.name ?? from.email} -> ${newOwner} (offboarding, via Forward Deploy)`
+      );
+      sop.owner = newOwner;
+      sop.content = updated;
+      touched = true;
+    }
+    if (touched) {
+      await provider
+        .commitFile(
+          `${sopPath()}/${dept.slug}/INDEX.md`,
+          buildIndexMarkdown(dept.name, sops),
+          `SOP index: ${dept.name} (ownership transfer)`
+        )
+        .catch(() => {});
+    }
+  }
+
+  revalidatePath("/admin/users");
+  revalidatePath("/sops");
 }
 
 export async function toggleMembership(formData: FormData) {

@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { inviteUser, toggleMembership } from "../actions";
+import { inviteUser, toggleMembership, transferOwnership } from "../actions";
 
 export default async function UsersPage() {
   const [users, departments] = await Promise.all([
@@ -47,6 +47,46 @@ export default async function UsersPage() {
             </select>
           </div>
           <button type="submit">Invite</button>
+        </form>
+      </div>
+
+      <div className="card">
+        <h2 style={{ marginTop: 0 }}>Offboard - transfer ownership</h2>
+        <p className="muted">
+          When someone leaves, hand everything to their replacement: their
+          SOPs get re-owned in the repo (committed, indexes regenerated),
+          their plans reassigned, and their department memberships copied
+          over. The SOP content itself is the handover - the replacement
+          reads what their predecessor documented.
+        </p>
+        <form action={transferOwnership} className="row">
+          <div className="stack">
+            <label htmlFor="fromUserId">From (departing)</label>
+            <select id="fromUserId" name="fromUserId" required defaultValue="">
+              <option value="" disabled>
+                select...
+              </option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name ?? u.email}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="stack">
+            <label htmlFor="toUserId">To (replacement)</label>
+            <select id="toUserId" name="toUserId" required defaultValue="">
+              <option value="" disabled>
+                select...
+              </option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name ?? u.email}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button type="submit">Transfer everything</button>
         </form>
       </div>
 
