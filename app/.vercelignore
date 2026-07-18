@@ -1,0 +1,6 @@
+# Never ship local secrets or build output with a CLI deploy
+.env
+.env.*
+node_modules
+.next
+dev-server.log

@@ -26,6 +26,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     verificationTokensTable: schema.verificationTokens,
   }),
   session: { strategy: "database" },
+  // Deployments sit behind Vercel's proxy (or the company's own) - trust the
+  // forwarded host so magic links and callbacks use the public URL.
+  trustHost: true,
   pages: { signIn: "/signin", verifyRequest: "/signin/check-email" },
   providers: [
     Nodemailer({
