@@ -9,6 +9,9 @@ display_information:
   description: DM me notes, ideas, or process brain-dumps - they land in your Forward Deploy captures inbox.
   background_color: "#1f1e1d"
 features:
+  app_home:
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: false
   bot_user:
     display_name: Forward Deploy
     always_online: true
