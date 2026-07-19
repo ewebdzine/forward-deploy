@@ -1,5 +1,14 @@
 import { createHmac, timingSafeEqual } from "crypto";
 
+/** The instance's public URL, for links in bot messages. */
+export function appBaseUrl(): string {
+  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+  return (process.env.AUTH_URL ?? "").replace(/\/$/, "");
+}
+
 /** Slack integration is optional: absent env = every helper degrades. */
 export function slackConfigured(): boolean {
   return Boolean(

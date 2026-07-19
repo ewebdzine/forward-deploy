@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import {
+  appBaseUrl,
   getSlackUserEmail,
   sendSlackDm,
   slackConfigured,
@@ -111,9 +112,12 @@ export async function POST(req: Request) {
       title: event.text.slice(0, 80),
       transcript: [{ text: event.text, ts }],
     });
+    const base = appBaseUrl();
     await sendSlackDm(
       event.channel,
-      "Captured - keep talking to add to this note, and finish it in Forward Deploy under Captures whenever you're ready."
+      base
+        ? `Captured - keep talking to add to this note, and finish it whenever you're ready: <${base}/captures|open your captures in Forward Deploy>.`
+        : "Captured - keep talking to add to this note, and finish it in Forward Deploy under Captures whenever you're ready."
     );
   } else {
     await db
