@@ -1,0 +1,29 @@
+# Forward Deploy Slack capture bot - app manifest.
+# Create the app at https://api.slack.com/apps > Create New App > From a manifest,
+# paste this in, and REPLACE <your-app-url> with your deployed Forward Deploy URL
+# (the events URL only verifies once SLACK_SIGNING_SECRET is set on the deployment,
+# so set both env vars from the app's Basic Info / OAuth pages first, redeploy,
+# THEN save the event subscription).
+display_information:
+  name: Forward Deploy
+  description: DM me notes, ideas, or process brain-dumps - they land in your Forward Deploy captures inbox.
+  background_color: "#1f1e1d"
+features:
+  bot_user:
+    display_name: Forward Deploy
+    always_online: true
+oauth_config:
+  scopes:
+    bot:
+      - im:history
+      - chat:write
+      - users:read
+      - users:read.email
+settings:
+  event_subscriptions:
+    request_url: https://<your-app-url>/api/slack/events
+    bot_events:
+      - message.im
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
