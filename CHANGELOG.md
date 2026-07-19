@@ -6,6 +6,15 @@ Forward Deploy is pre-1.0.
 ## [Unreleased]
 
 ### Added
+- **Slack capture bot** - DM the Forward Deploy bot a note, idea, or process brain-dump and it
+  lands in your in-app Captures inbox (messages within 30 minutes group into one capture).
+  Access is roster-gated app-side: the sender's Slack email must match an invited user; others
+  get a polite decline and nothing is stored. Signed-request verification, retry dedupe, and
+  the whole feature is dormant without `SLACK_BOT_TOKEN`/`SLACK_SIGNING_SECRET`. The Captures
+  page turns any capture into an SOP with one click - the builder opens pre-loaded with what
+  you wrote in Slack. Dashboard nudge + sidebar entry.
+
+### Added
 - **Bitbucket Cloud provider** - promoted from post-v1 into v1 (the reference deployment's repo
   lives on Bitbucket). A second `SourceControlProvider` implementation over the 2.0 REST API
   (plain fetch, no SDK): list/read/exists via `/src`, commits via `POST /src`, workspace code

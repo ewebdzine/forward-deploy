@@ -55,6 +55,10 @@ export default async function HomePage() {
     listSoftwareCanons().catch(() => []),
   ]);
   const pendingTools = await findUndocumentedTools(software).catch(() => []);
+  const openCaptures = await db.query.captures.findMany({
+    where: (c, { and: a, eq: e }) =>
+      a(e(c.userId, session.user.id), e(c.status, "open")),
+  });
 
   let canonify = false;
   let repoOk = true;
@@ -90,6 +94,18 @@ export default async function HomePage() {
         Document your department, then turn its inefficiencies into
         developer-ready plans.
       </p>
+
+      {openCaptures.length > 0 && (
+        <div className="card" style={{ borderColor: "var(--accent)" }}>
+          <p style={{ margin: 0 }}>
+            <strong>
+              {openCaptures.length} capture{openCaptures.length === 1 ? "" : "s"}
+            </strong>{" "}
+            from Slack waiting -{" "}
+            <Link href="/captures">turn them into SOPs or plans</Link>
+          </p>
+        </div>
+      )}
 
       <div className="stat-grid">
         <Link className="stat-card" href="/sops">

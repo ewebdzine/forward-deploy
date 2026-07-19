@@ -33,15 +33,18 @@ export default function SopBuilder({
   departmentSlug,
   departmentName,
   initial,
+  seedText,
 }: {
   departmentSlug: string;
   departmentName: string;
   /** Present when revising an existing SOP. */
   initial?: { path: string; slug: string; title: string; markdown: string };
+  /** Pre-loads the composer (e.g. a Slack capture) - user reviews, then sends. */
+  seedText?: string;
 }) {
   const revise = Boolean(initial);
   const [messages, setMessages] = useState<ChatTurn[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(seedText ?? "");
   const [busy, setBusy] = useState(false);
   const [title, setTitle] = useState(initial?.title ?? "");
   const [topicSlug, setTopicSlug] = useState(initial?.slug ?? "");

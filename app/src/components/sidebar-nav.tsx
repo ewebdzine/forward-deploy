@@ -7,6 +7,7 @@ const WORKSPACE = [
   { href: "/", label: "Dashboard", exact: true },
   { href: "/sops", label: "SOPs" },
   { href: "/plans", label: "Plans" },
+  { href: "/captures", label: "Captures" },
   { href: "/software", label: "Software" },
   { href: "/repo", label: "Repository" },
 ];

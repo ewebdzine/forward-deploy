@@ -172,6 +172,26 @@ export const planSessions = pgTable("plan_session", {
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
 });
 
+// Slack capture inbox: DM the bot a note/brain-dump, finish it in the app.
+export const captures = pgTable("capture", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  source: text("source").notNull().default("slack"),
+  title: text("title").notNull(),
+  // [{ text, ts }] in arrival order.
+  transcript: jsonb("transcript")
+    .$type<{ text: string; ts: string }[]>()
+    .notNull()
+    .default([]),
+  status: text("status").$type<"open" | "dismissed">().notNull().default("open"),
+  createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
+});
+
 // Post-v1: cross-department pattern detection writes here.
 export const insights = pgTable("insight", {
   id: text("id")

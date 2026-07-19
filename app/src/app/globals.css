@@ -735,6 +735,17 @@ tr:last-child td {
   }
 }
 
+.capture-transcript {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+  max-height: 220px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
 /* toast notifications (top-right, animate in/out) */
 .toast {
   position: fixed;
