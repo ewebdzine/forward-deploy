@@ -352,6 +352,7 @@ export async function POST(req: Request) {
         const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
         let reply = "";
         let didUpdatePlan = false;
+        const usage = { in: 0, out: 0, cacheWrite: 0, cacheRead: 0 };
 
         // captureReply=false runs a silent repair round (tools only, text discarded).
         const runRounds = async (maxRounds: number, captureReply: boolean) => {
@@ -365,6 +366,11 @@ export async function POST(req: Request) {
               tools: TOOLS,
               tool_choice: { type: "auto" },
             });
+
+            usage.in += response.usage.input_tokens ?? 0;
+            usage.out += response.usage.output_tokens ?? 0;
+            usage.cacheWrite += response.usage.cache_creation_input_tokens ?? 0;
+            usage.cacheRead += response.usage.cache_read_input_tokens ?? 0;
 
             const text = response.content
               .filter((b): b is Anthropic.TextBlock => b.type === "text")
@@ -473,13 +479,22 @@ export async function POST(req: Request) {
             .update(schema.planSessions)
             .set({
               transcript: [...(existing.transcript as unknown[]), ...newTurns],
+              tokensIn: existing.tokensIn + usage.in,
+              tokensOut: existing.tokensOut + usage.out,
+              tokensCacheWrite: existing.tokensCacheWrite + usage.cacheWrite,
+              tokensCacheRead: existing.tokensCacheRead + usage.cacheRead,
               updatedAt: new Date(),
             })
             .where(eq(schema.planSessions.id, existing.id));
         } else {
-          await db
-            .insert(schema.planSessions)
-            .values({ planId: plan.id, transcript: newTurns });
+          await db.insert(schema.planSessions).values({
+            planId: plan.id,
+            transcript: newTurns,
+            tokensIn: usage.in,
+            tokensOut: usage.out,
+            tokensCacheWrite: usage.cacheWrite,
+            tokensCacheRead: usage.cacheRead,
+          });
         }
 
         const updated = await db.query.plans.findFirst({

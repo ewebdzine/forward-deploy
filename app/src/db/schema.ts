@@ -159,7 +159,9 @@ export const mockups = pgTable("mockup", {
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
 });
 
-// The Claude conversation that produced a plan, kept for auditability.
+// The Claude conversation that produced a plan, kept for auditability -
+// including the full token ledger, so a plan's real planning cost is a fact
+// on record instead of a guess.
 export const planSessions = pgTable("plan_session", {
   id: text("id")
     .primaryKey()
@@ -168,6 +170,10 @@ export const planSessions = pgTable("plan_session", {
     .notNull()
     .references(() => plans.id, { onDelete: "cascade" }),
   transcript: jsonb("transcript").$type<unknown[]>().notNull().default([]),
+  tokensIn: integer("tokens_in").notNull().default(0),
+  tokensOut: integer("tokens_out").notNull().default(0),
+  tokensCacheWrite: integer("tokens_cache_write").notNull().default(0),
+  tokensCacheRead: integer("tokens_cache_read").notNull().default(0),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
 });

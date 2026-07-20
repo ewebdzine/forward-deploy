@@ -36,6 +36,10 @@ export default async function PlanViewPage({
     plan.status === "draft" || plan.status === "changes_requested";
   const isDev =
     session.user.role === "developer" || session.user.role === "admin";
+  const planSession = await db.query.planSessions.findFirst({
+    where: eq(schema.planSessions.planId, plan.id),
+  });
+  const turnCount = ((planSession?.transcript as unknown[]) ?? []).length;
   const openQuestions = parseOpenQuestionsDetailed(plan.sections);
   const forManager = openQuestions.filter((q) => q.audience === "manager").length;
   const forDev = openQuestions.length - forManager;
@@ -238,6 +242,16 @@ export default async function PlanViewPage({
             <button type="submit">Post reply</button>
           </form>
         </div>
+      )}
+
+      {planSession && (planSession.tokensIn > 0 || planSession.tokensOut > 0) && (
+        <p className="muted" style={{ fontSize: "0.78rem" }}>
+          Planning session: {Math.floor(turnCount / 2)} exchanges -{" "}
+          {(planSession.tokensIn + planSession.tokensCacheWrite).toLocaleString()}{" "}
+          input / {planSession.tokensOut.toLocaleString()} output /{" "}
+          {planSession.tokensCacheRead.toLocaleString()} cache-read tokens. The
+          full cost of planning this, on record.
+        </p>
       )}
 
       {transitions.length > 0 && (
