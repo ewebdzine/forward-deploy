@@ -497,6 +497,16 @@ export async function POST(req: Request) {
           });
         }
 
+        await db.insert(schema.usageLog).values({
+          userId: session.user.id,
+          kind: "plan",
+          refId: plan.id,
+          tokensIn: usage.in,
+          tokensOut: usage.out,
+          tokensCacheWrite: usage.cacheWrite,
+          tokensCacheRead: usage.cacheRead,
+        });
+
         const updated = await db.query.plans.findFirst({
           where: eq(schema.plans.id, plan.id),
           with: { mockups: true },

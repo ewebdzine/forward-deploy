@@ -1,14 +1,26 @@
-import { db } from "@/db";
+import { sql } from "drizzle-orm";
+import { db, schema } from "@/db";
 import { inviteUser, toggleMembership, transferOwnership } from "../actions";
 
 export default async function UsersPage() {
-  const [users, departments] = await Promise.all([
+  const [users, departments, usageRows] = await Promise.all([
     db.query.users.findMany({
       with: { departmentMembers: { with: { department: true } } },
       orderBy: (u, { asc }) => asc(u.email),
     }),
     db.query.departments.findMany({ orderBy: (d, { asc }) => asc(d.name) }),
+    db
+      .select({
+        userId: schema.usageLog.userId,
+        turns: sql<number>`count(*)::int`,
+        tokensIn: sql<number>`sum(${schema.usageLog.tokensIn} + ${schema.usageLog.tokensCacheWrite})::int`,
+        tokensOut: sql<number>`sum(${schema.usageLog.tokensOut})::int`,
+        cacheRead: sql<number>`sum(${schema.usageLog.tokensCacheRead})::int`,
+      })
+      .from(schema.usageLog)
+      .groupBy(schema.usageLog.userId),
   ]);
+  const usageByUser = new Map(usageRows.map((r) => [r.userId, r]));
 
   return (
     <>
@@ -49,6 +61,50 @@ export default async function UsersPage() {
           <button type="submit">Invite</button>
         </form>
       </div>
+
+      {usageRows.length > 0 && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Token usage by user</h2>
+          <p className="muted">
+            Every AI turn is attributed - what each person&apos;s planning and
+            documenting actually costs. Cache reads are the cheap 90%-discounted
+            tokens; input includes cache writes.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th style={{ textAlign: "right" }}>Turns</th>
+                <th style={{ textAlign: "right" }}>Input</th>
+                <th style={{ textAlign: "right" }}>Output</th>
+                <th style={{ textAlign: "right" }}>Cache read</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users
+                .filter((u) => usageByUser.has(u.id))
+                .map((u) => {
+                  const r = usageByUser.get(u.id)!;
+                  return (
+                    <tr key={u.id}>
+                      <td>{u.name ?? u.email}</td>
+                      <td style={{ textAlign: "right" }}>{r.turns}</td>
+                      <td style={{ textAlign: "right" }}>
+                        {r.tokensIn.toLocaleString()}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        {r.tokensOut.toLocaleString()}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        {r.cacheRead.toLocaleString()}
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="card">
         <h2 style={{ marginTop: 0 }}>Offboard - transfer ownership</h2>

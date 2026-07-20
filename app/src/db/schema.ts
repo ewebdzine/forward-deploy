@@ -198,6 +198,24 @@ export const captures = pgTable("capture", {
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
 });
 
+// One row per AI turn, attributed to the user who ran it - powers per-user
+// (and later per-department/per-day) usage reporting.
+export const usageLog = pgTable("usage_log", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind").$type<"plan" | "sop">().notNull(),
+  refId: text("ref_id").notNull(),
+  tokensIn: integer("tokens_in").notNull().default(0),
+  tokensOut: integer("tokens_out").notNull().default(0),
+  tokensCacheWrite: integer("tokens_cache_write").notNull().default(0),
+  tokensCacheRead: integer("tokens_cache_read").notNull().default(0),
+  createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+});
+
 // Post-v1: cross-department pattern detection writes here.
 export const insights = pgTable("insight", {
   id: text("id")

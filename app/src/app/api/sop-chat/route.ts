@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { auth } from "@/auth";
+import { db, schema } from "@/db";
 import { canAccessDepartment, findDepartment } from "@/lib/access";
 import { buildSopCorpus } from "@/lib/sops";
 import { sopPath } from "@/lib/source-control";
@@ -230,6 +231,7 @@ export async function POST(req: Request) {
   let draft: { title: string; topic_slug: string; markdown: string } | null =
     null;
   let titleUpdate: { title: string; topic_slug: string } | null = null;
+  const usage = { in: 0, out: 0, cacheWrite: 0, cacheRead: 0 };
 
   // Small tool loop (title + draft are metadata tools, not exploration) so
   // Claude can set the title on its first reply and keep talking.
@@ -243,6 +245,11 @@ export async function POST(req: Request) {
         tools: [SET_SOP_TITLE_TOOL, UPDATE_SOP_DRAFT_TOOL],
         tool_choice: { type: "auto" },
       });
+
+      usage.in += response.usage.input_tokens ?? 0;
+      usage.out += response.usage.output_tokens ?? 0;
+      usage.cacheWrite += response.usage.cache_creation_input_tokens ?? 0;
+      usage.cacheRead += response.usage.cache_read_input_tokens ?? 0;
 
       const text = response.content
         .filter((b): b is Anthropic.TextBlock => b.type === "text")
@@ -294,6 +301,16 @@ export async function POST(req: Request) {
       { status: 502 }
     );
   }
+
+  await db.insert(schema.usageLog).values({
+    userId: session.user.id,
+    kind: "sop",
+    refId: department.slug,
+    tokensIn: usage.in,
+    tokensOut: usage.out,
+    tokensCacheWrite: usage.cacheWrite,
+    tokensCacheRead: usage.cacheRead,
+  });
 
   return NextResponse.json({
     reply:
