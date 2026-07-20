@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db, schema } from "@/db";
+import { estimateCostUsd, formatUsd } from "@/lib/pricing";
 import { inviteUser, toggleMembership, transferOwnership } from "../actions";
 
 export default async function UsersPage() {
@@ -13,7 +14,8 @@ export default async function UsersPage() {
       .select({
         userId: schema.usageLog.userId,
         turns: sql<number>`count(*)::int`,
-        tokensIn: sql<number>`sum(${schema.usageLog.tokensIn} + ${schema.usageLog.tokensCacheWrite})::int`,
+        tokensIn: sql<number>`sum(${schema.usageLog.tokensIn})::int`,
+        cacheWrite: sql<number>`sum(${schema.usageLog.tokensCacheWrite})::int`,
         tokensOut: sql<number>`sum(${schema.usageLog.tokensOut})::int`,
         cacheRead: sql<number>`sum(${schema.usageLog.tokensCacheRead})::int`,
       })
@@ -78,6 +80,7 @@ export default async function UsersPage() {
                 <th style={{ textAlign: "right" }}>Input</th>
                 <th style={{ textAlign: "right" }}>Output</th>
                 <th style={{ textAlign: "right" }}>Cache read</th>
+                <th style={{ textAlign: "right" }}>Est. cost</th>
               </tr>
             </thead>
             <tbody>
@@ -85,18 +88,27 @@ export default async function UsersPage() {
                 .filter((u) => usageByUser.has(u.id))
                 .map((u) => {
                   const r = usageByUser.get(u.id)!;
+                  const cost = estimateCostUsd({
+                    tokensIn: r.tokensIn,
+                    tokensOut: r.tokensOut,
+                    tokensCacheWrite: r.cacheWrite,
+                    tokensCacheRead: r.cacheRead,
+                  });
                   return (
                     <tr key={u.id}>
                       <td>{u.name ?? u.email}</td>
                       <td style={{ textAlign: "right" }}>{r.turns}</td>
                       <td style={{ textAlign: "right" }}>
-                        {r.tokensIn.toLocaleString()}
+                        {(r.tokensIn + r.cacheWrite).toLocaleString()}
                       </td>
                       <td style={{ textAlign: "right" }}>
                         {r.tokensOut.toLocaleString()}
                       </td>
                       <td style={{ textAlign: "right" }}>
                         {r.cacheRead.toLocaleString()}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        {cost !== null ? formatUsd(cost) : "-"}
                       </td>
                     </tr>
                   );

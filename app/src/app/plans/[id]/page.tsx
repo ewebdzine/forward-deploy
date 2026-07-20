@@ -7,6 +7,7 @@ import { requireSession, canAccessDepartment } from "@/lib/access";
 import { db, schema } from "@/db";
 import { PLAN_SECTIONS, parseOpenQuestionsDetailed } from "@/lib/plan-sections";
 import { devTransitionsFrom } from "@/lib/plan-status";
+import { estimateCostUsd, formatUsd } from "@/lib/pricing";
 import { addPlanMessage, setPlanStatus } from "../actions";
 import SubmitPlanButton from "./submit-button";
 
@@ -249,8 +250,12 @@ export default async function PlanViewPage({
           Planning session: {Math.floor(turnCount / 2)} exchanges -{" "}
           {(planSession.tokensIn + planSession.tokensCacheWrite).toLocaleString()}{" "}
           input / {planSession.tokensOut.toLocaleString()} output /{" "}
-          {planSession.tokensCacheRead.toLocaleString()} cache-read tokens. The
-          full cost of planning this, on record.
+          {planSession.tokensCacheRead.toLocaleString()} cache-read tokens
+          {(() => {
+            const cost = estimateCostUsd(planSession);
+            return cost !== null ? ` (~${formatUsd(cost)})` : "";
+          })()}
+          . The full cost of planning this, on record.
         </p>
       )}
 
