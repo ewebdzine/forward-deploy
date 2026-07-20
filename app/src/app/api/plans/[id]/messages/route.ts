@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { requireApiToken, resolveApiAuthor } from "@/lib/api-auth";
+import { notifyPlanEvent } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,14 @@ export async function POST(
     .update(schema.plans)
     .set({ updatedAt: new Date() })
     .where(eq(schema.plans.id, id));
+  await notifyPlanEvent({
+    planId: id,
+    planTitle: plan.title,
+    actorId: author.id,
+    actorName: author.name ?? author.email,
+    event: "replied in the review thread",
+    preview: message,
+  });
 
   return NextResponse.json({
     ok: true,

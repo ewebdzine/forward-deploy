@@ -8,6 +8,7 @@ import { db, schema } from "@/db";
 import { canAccessDepartment } from "@/lib/access";
 import { missingRequiredSections } from "@/lib/plan-sections";
 import { isValidDevTransition } from "@/lib/plan-status";
+import { notifyPlanEvent } from "@/lib/notify";
 
 export async function createPlan(formData: FormData) {
   const session = await auth();
@@ -87,6 +88,14 @@ export async function addPlanMessage(formData: FormData) {
     .update(schema.plans)
     .set({ updatedAt: new Date() })
     .where(eq(schema.plans.id, planId));
+  await notifyPlanEvent({
+    planId,
+    planTitle: plan.title,
+    actorId: session.user.id,
+    actorName: session.user.name ?? session.user.email ?? "Someone",
+    event: "replied in the review thread",
+    preview: message,
+  });
   revalidatePath(`/plans/${planId}`);
   revalidatePath("/plans");
 }
@@ -110,6 +119,13 @@ export async function setPlanStatus(formData: FormData) {
     .update(schema.plans)
     .set({ status: to as typeof plan.status, updatedAt: new Date() })
     .where(eq(schema.plans.id, planId));
+  await notifyPlanEvent({
+    planId,
+    planTitle: plan.title,
+    actorId: session.user.id,
+    actorName: session.user.name ?? session.user.email ?? "The dev team",
+    event: `set the status to "${to.replace(/_/g, " ")}"`,
+  });
   revalidatePath(`/plans/${planId}`);
   revalidatePath("/plans");
 }
