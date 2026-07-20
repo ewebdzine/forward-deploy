@@ -5,6 +5,7 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  real,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
@@ -214,6 +215,14 @@ export const usageLog = pgTable("usage_log", {
   tokensCacheWrite: integer("tokens_cache_write").notNull().default(0),
   tokensCacheRead: integer("tokens_cache_read").notNull().default(0),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+});
+
+// Daily billed cost from Anthropic's Admin API (cost_report) - invoice truth
+// beside the per-turn estimates. Synced by /api/cron/cost-sync.
+export const billedCosts = pgTable("billed_cost", {
+  day: text("day").primaryKey(), // YYYY-MM-DD (UTC bucket start)
+  amountUsd: real("amount_usd").notNull().default(0),
+  updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
 });
 
 // Post-v1: cross-department pattern detection writes here.

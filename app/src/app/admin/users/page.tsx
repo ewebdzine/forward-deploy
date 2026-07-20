@@ -4,7 +4,7 @@ import { estimateCostUsd, formatUsd } from "@/lib/pricing";
 import { inviteUser, toggleMembership, transferOwnership } from "../actions";
 
 export default async function UsersPage() {
-  const [users, departments, usageRows] = await Promise.all([
+  const [users, departments, usageRows, billedRows, dailyEstimates] = await Promise.all([
     db.query.users.findMany({
       with: { departmentMembers: { with: { department: true } } },
       orderBy: (u, { asc }) => asc(u.email),
@@ -21,8 +21,33 @@ export default async function UsersPage() {
       })
       .from(schema.usageLog)
       .groupBy(schema.usageLog.userId),
+    db.query.billedCosts.findMany({
+      orderBy: (b, { desc }) => desc(b.day),
+      limit: 7,
+    }),
+    db
+      .select({
+        day: sql<string>`to_char(${schema.usageLog.createdAt}, 'YYYY-MM-DD')`,
+        tokensIn: sql<number>`sum(${schema.usageLog.tokensIn})::int`,
+        cacheWrite: sql<number>`sum(${schema.usageLog.tokensCacheWrite})::int`,
+        tokensOut: sql<number>`sum(${schema.usageLog.tokensOut})::int`,
+        cacheRead: sql<number>`sum(${schema.usageLog.tokensCacheRead})::int`,
+      })
+      .from(schema.usageLog)
+      .groupBy(sql`to_char(${schema.usageLog.createdAt}, 'YYYY-MM-DD')`),
   ]);
   const usageByUser = new Map(usageRows.map((r) => [r.userId, r]));
+  const estimateByDay = new Map(
+    dailyEstimates.map((d) => [
+      d.day,
+      estimateCostUsd({
+        tokensIn: d.tokensIn,
+        tokensOut: d.tokensOut,
+        tokensCacheWrite: d.cacheWrite,
+        tokensCacheRead: d.cacheRead,
+      }),
+    ])
+  );
 
   return (
     <>
@@ -113,6 +138,43 @@ export default async function UsersPage() {
                     </tr>
                   );
                 })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {billedRows.length > 0 && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Billed vs estimated (last 7 days)</h2>
+          <p className="muted">
+            Billed is Anthropic&apos;s actual invoice truth (Admin API, synced
+            daily); estimated is this app&apos;s token ledger at your configured
+            prices. A widening gap means the PRICE_PER_MTOK env vars are stale
+            - or another tool shares this API key.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Day (UTC)</th>
+                <th style={{ textAlign: "right" }}>Billed</th>
+                <th style={{ textAlign: "right" }}>Estimated (this app)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {billedRows.map((b) => {
+                const est = estimateByDay.get(b.day) ?? null;
+                return (
+                  <tr key={b.day}>
+                    <td>{b.day}</td>
+                    <td style={{ textAlign: "right" }}>
+                      {formatUsd(b.amountUsd)}
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      {est !== null ? formatUsd(est) : "-"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
