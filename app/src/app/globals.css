@@ -184,6 +184,75 @@ main.wide {
   flex-wrap: wrap;
 }
 
+/* ---------- mobile nav: hamburger + full-screen overlay ---------- */
+
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text);
+  padding: 0.3rem;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  padding: 0.9rem 1.3rem 2rem;
+  overflow-y: auto;
+}
+.mobile-overlay-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.2rem;
+}
+.mobile-overlay-head .brand {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.mobile-overlay nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.mobile-overlay .nav-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 1.3rem 0.2rem 0.4rem;
+}
+.mobile-overlay nav a {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 500;
+  color: var(--text);
+  padding: 0.75rem 0.4rem;
+  border-radius: var(--radius-sm);
+}
+.mobile-overlay nav a.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+.mobile-overlay-user {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding-top: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 1rem;
+}
+
 @media (max-width: 860px) {
   .shell {
     flex-direction: column;
@@ -191,21 +260,28 @@ main.wide {
   .sidebar {
     width: 100%;
     height: auto;
-    position: static;
+    position: sticky;
+    top: 0;
+    z-index: 100;
     flex-direction: row;
     align-items: center;
-    overflow-x: auto;
+    justify-content: space-between;
+    padding: 0.55rem 0.9rem;
   }
-  .sidebar nav {
-    flex-direction: row;
+  .sidebar .brand {
+    padding: 0.2rem 0;
+    font-size: 1.1rem;
   }
-  .sidebar .nav-label,
-  .sidebar-user .role-chip {
+  /* Desktop nav + user block hide; the hamburger overlay takes over. */
+  .sidebar nav,
+  .sidebar-user {
     display: none;
   }
-  .sidebar-user {
-    border-top: none;
-    margin-left: auto;
+  .hamburger {
+    display: block;
+  }
+  main {
+    padding: 1.4rem 1.1rem 4rem;
   }
 }
 

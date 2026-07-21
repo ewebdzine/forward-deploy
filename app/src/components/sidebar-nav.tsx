@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const WORKSPACE = [
+export const WORKSPACE_LINKS = [
   { href: "/", label: "Dashboard", exact: true },
   { href: "/sops", label: "SOPs" },
   { href: "/plans", label: "Plans" },
@@ -12,10 +12,12 @@ const WORKSPACE = [
   { href: "/repo", label: "Repository" },
 ];
 
-const ADMIN = [
+export const ADMIN_LINKS = [
   { href: "/admin/departments", label: "Departments" },
   { href: "/admin/users", label: "Users" },
 ];
+const WORKSPACE = WORKSPACE_LINKS;
+const ADMIN = ADMIN_LINKS;
 
 export default function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();

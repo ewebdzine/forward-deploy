@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { auth, isDeveloperRole, signOut } from "@/auth";
 import SidebarNav from "@/components/sidebar-nav";
+import MobileMenu from "@/components/mobile-menu";
 import ThemeToggle from "@/components/theme-toggle";
 import "./globals.css";
 
@@ -47,6 +48,18 @@ export default async function RootLayout({
             <a className="brand" href="/">
               Forward Deploy
             </a>
+            <MobileMenu isAdmin={isDeveloperRole(session.user.role)}>
+              <span>
+                {session.user.name ?? session.user.email}{" "}
+                <span className="role-chip">{session.user.role}</span>
+              </span>
+              <ThemeToggle />
+              <form action={doSignOut}>
+                <button type="submit" className="link-button">
+                  Sign out
+                </button>
+              </form>
+            </MobileMenu>
             <SidebarNav isAdmin={isDeveloperRole(session.user.role)} />
             <div className="sidebar-user">
               <span>
