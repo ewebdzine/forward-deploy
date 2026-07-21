@@ -66,6 +66,20 @@ Status: in_development <set | proposed>
 Next: /canonify:build "<task framing>"  (or enter plan mode with this brief)
 ```
 
+## Write the verified file manifest back (before building)
+
+The plan's "Proposed files" section came from the app's exploration - verify it against the
+repo you are actually sitting in before treating it as the map:
+
+1. Walk the proposal: confirm each **Proposed edits** path exists (correct the path if it
+   moved), confirm each **Proposed new** path's directory and naming match the codebase's
+   conventions, and add anything the plan missed that the implementation will clearly touch.
+   Full repo-relative paths from the repo root, one line of why per entry.
+2. Show the corrected manifest, then write it back so the plan document carries the
+   authoritative version: `PATCH <appUrl>/api/plans/<id>` with `{ "files": "<markdown>" }`
+   (bearer `FORWARD_DEPLOY_TOKEN`). This is the ONE section the dev side may write - never
+   touch the manager's prose sections.
+
 ## Log build usage as you go
 
 The pulled plan's id stays relevant after the pull: whenever a build session for this plan wraps

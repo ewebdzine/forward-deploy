@@ -54,7 +54,12 @@ export async function GET(
   });
 }
 
-/** PATCH /api/plans/:id { status } - dev-side transitions only. */
+/**
+ * PATCH /api/plans/:id { status?, files? } - dev-side writes. `status` runs
+ * the transition rules; `files` replaces the "Proposed files" section - the
+ * ONE section the dev side may write (it is developer-facing by design; the
+ * manager's prose sections stay theirs).
+ */
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -63,21 +68,25 @@ export async function PATCH(
   if (denied) return denied;
 
   const { id } = await params;
-  let body: { status?: string };
+  let body: { status?: string; files?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
-  if (!body.status) {
-    return NextResponse.json({ error: "status is required" }, { status: 400 });
+  if (!body.status && typeof body.files !== "string") {
+    return NextResponse.json(
+      { error: "status or files is required" },
+      { status: 400 }
+    );
   }
 
   const plan = await db.query.plans.findFirst({
     where: eq(schema.plans.id, id),
   });
   if (!plan) return NextResponse.json({ error: "Unknown plan" }, { status: 404 });
-  if (!isValidDevTransition(plan.status, body.status)) {
+
+  if (body.status && !isValidDevTransition(plan.status, body.status)) {
     return NextResponse.json(
       { error: `Invalid transition: ${plan.status} -> ${body.status}` },
       { status: 409 }
@@ -86,8 +95,18 @@ export async function PATCH(
 
   await db
     .update(schema.plans)
-    .set({ status: body.status as typeof plan.status, updatedAt: new Date() })
+    .set({
+      ...(body.status ? { status: body.status as typeof plan.status } : {}),
+      ...(typeof body.files === "string"
+        ? { sections: { ...plan.sections, files: body.files } }
+        : {}),
+      updatedAt: new Date(),
+    })
     .where(eq(schema.plans.id, id));
 
-  return NextResponse.json({ ok: true, status: body.status });
+  return NextResponse.json({
+    ok: true,
+    ...(body.status ? { status: body.status } : {}),
+    ...(typeof body.files === "string" ? { filesUpdated: true } : {}),
+  });
 }

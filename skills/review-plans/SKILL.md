@@ -29,7 +29,13 @@ manager <-> developer thread, and advance its status - without leaving Claude Co
    (offer to save each mockup's HTML to a local file for viewing - do not dump raw HTML to the
    terminal).
 
-4. **Assess before replying.** The plan cites files and canons - spot-check the load-bearing ones
+4. **Verify the file manifest.** If the plan's "Proposed files" section is missing, thin, or
+   wrong, draft the real one from the repo (full repo-relative paths, **Proposed new:** /
+   **Proposed edits:** bullets, one-line why each), show it, and write it back with
+   `PATCH <appUrl>/api/plans/<id>` `{ "files": "<markdown>" }` - the one section the dev side
+   owns.
+
+5. **Assess before replying.** The plan cites files and canons - spot-check the load-bearing ones
    in the actual repo so feedback is grounded ("the plan assumes X; the code does Y") rather than
    vibes. `/canonify:build`-style routing helps here.
 
