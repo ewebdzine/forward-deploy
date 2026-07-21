@@ -1,5 +1,6 @@
 import { inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/access";
+import { isDeveloperRole } from "@/auth";
 import { db, schema } from "@/db";
 import { createPlan } from "../actions";
 
@@ -9,7 +10,7 @@ export default async function NewPlanPage() {
   const session = await requireSession();
 
   let departments;
-  if (session.user.role === "manager") {
+  if (!isDeveloperRole(session.user.role)) {
     const memberships = await db.query.departmentMembers.findMany({
       where: (m, { eq }) => eq(m.userId, session.user.id),
     });

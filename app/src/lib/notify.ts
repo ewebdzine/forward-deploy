@@ -43,6 +43,53 @@ async function emailUser(to: string, subject: string, text: string) {
   });
 }
 
+function isRealEmail(email: string): boolean {
+  return email.includes("@") && !email.endsWith(".local");
+}
+
+/**
+ * A department's effective developer: the assigned one, or - when the company
+ * has exactly one developer - that person automatically. Null means "no single
+ * developer": nudges fan out to all developers instead.
+ */
+export async function effectiveDeveloper(departmentId: string) {
+  const dept = await db.query.departments.findFirst({
+    where: (d, { eq }) => eq(d.id, departmentId),
+  });
+  if (dept?.developerId) {
+    const assigned = await db.query.users.findFirst({
+      where: (u, { eq }) => eq(u.id, dept.developerId!),
+    });
+    if (assigned) return assigned;
+  }
+  const devs = (
+    await db.query.users.findMany({
+      where: inArray(schema.users.role, ["developer", "admin"]),
+    })
+  ).filter((d) => isRealEmail(d.email));
+  return devs.length === 1 ? devs[0] : null;
+}
+
+/** All developers with real emails - the fan-out fallback. */
+export async function allDevelopers() {
+  return (
+    await db.query.users.findMany({
+      where: inArray(schema.users.role, ["developer", "admin"]),
+    })
+  ).filter((d) => isRealEmail(d.email));
+}
+
+/** Send a nudge to specific emails over every configured channel. */
+export async function notifyEmails(
+  emails: string[],
+  subject: string,
+  text: string
+) {
+  await Promise.allSettled(
+    emails.filter(isRealEmail).map((e) => notifyOne(e, subject, text))
+  );
+}
+
 async function notifyOne(email: string, subject: string, text: string) {
   const jobs: Promise<unknown>[] = [];
   if (slackConfigured()) {
@@ -79,8 +126,13 @@ export async function notifyPlanEvent(opts: {
     ]);
     if (!plan) return;
 
+    const dev = await effectiveDeveloper(plan.departmentId);
     const recipientIds = [
-      ...new Set([plan.authorId, ...messages.map((m) => m.authorId)]),
+      ...new Set([
+        plan.authorId,
+        ...(dev ? [dev.id] : []),
+        ...messages.map((m) => m.authorId),
+      ]),
     ].filter((id) => id !== opts.actorId);
     if (!recipientIds.length) return;
 
@@ -99,7 +151,7 @@ export async function notifyPlanEvent(opts: {
 
     await Promise.allSettled(
       recipients
-        .filter((r) => r.email.includes("@") && !r.email.endsWith(".local"))
+        .filter((r) => isRealEmail(r.email))
         .map((r) => notifyOne(r.email, subject, text))
     );
   } catch {

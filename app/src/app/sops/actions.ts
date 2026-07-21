@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { canAccessDepartment, findDepartment } from "@/lib/access";
 import { buildIndexMarkdown, listSops, parseFrontmatter } from "@/lib/sops";
+import { listSoftwareCanons } from "@/lib/software";
+import { allDevelopers, effectiveDeveloper, notifyEmails } from "@/lib/notify";
 import { getSourceControl, sopPath } from "@/lib/source-control";
 
 export type CommitSopResult =
@@ -71,6 +73,48 @@ export async function commitSop(
       );
     } catch {
       // index regeneration is best-effort; the next commit will catch it up
+    }
+
+    // Nudge the department's developer about newly-mentioned software that
+    // has no canon yet - chosen over auto-research so a human still reviews
+    // every canon before it's committed. Best-effort.
+    try {
+      const fm = parseFrontmatter(content);
+      const tools = (fm.tools ?? "")
+        .replace(/^\[/, "")
+        .replace(/\]$/, "")
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+      if (tools.length) {
+        const canons = await listSoftwareCanons().catch(() => []);
+        const known = new Set(
+          canons.flatMap((c) =>
+            [c.software, c.slug, ...(c.aliases ?? [])].map((n) =>
+              n.toLowerCase().replace(/[^a-z0-9]+/g, "")
+            )
+          )
+        );
+        const undocumented = tools.filter(
+          (t) => !known.has(t.toLowerCase().replace(/[^a-z0-9]+/g, ""))
+        );
+        if (undocumented.length) {
+          const dev = await effectiveDeveloper(department.id);
+          const targets = dev
+            ? [dev.email]
+            : (await allDevelopers()).map((d) => d.email);
+          const slugs = undocumented
+            .map((t) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-"))
+            .join(", ");
+          await notifyEmails(
+            targets.filter((e) => e !== session.user.email),
+            `[Forward Deploy] Undocumented software in a ${department.name} SOP`,
+            `The SOP "${topicSlug}" in ${department.name} mentions software with no canon yet: ${undocumented.join(", ")}.\nRun /forward-deploy:capture-software ${slugs} to research it.`
+          );
+        }
+      }
+    } catch {
+      // nudges never fail the commit
     }
 
     revalidatePath("/sops");

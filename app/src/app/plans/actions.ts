@@ -3,12 +3,18 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
-import { auth } from "@/auth";
+import { auth, isDeveloperRole } from "@/auth";
 import { db, schema } from "@/db";
 import { canAccessDepartment } from "@/lib/access";
 import { missingRequiredSections } from "@/lib/plan-sections";
 import { isValidDevTransition } from "@/lib/plan-status";
-import { notifyPlanEvent } from "@/lib/notify";
+import {
+  allDevelopers,
+  effectiveDeveloper,
+  notifyEmails,
+  notifyPlanEvent,
+} from "@/lib/notify";
+import { appBaseUrl } from "@/lib/slack";
 
 export async function createPlan(formData: FormData) {
   const session = await auth();
@@ -62,6 +68,19 @@ export async function submitPlan(planId: string): Promise<SubmitPlanResult> {
     .update(schema.plans)
     .set({ status: "submitted", updatedAt: new Date() })
     .where(eq(schema.plans.id, planId));
+
+  // Nudge the department's developer (or every developer when none is
+  // singled out) - the plan just landed in their queue.
+  const dev = await effectiveDeveloper(plan.departmentId);
+  const targets = dev ? [dev.email] : (await allDevelopers()).map((d) => d.email);
+  const base = appBaseUrl();
+  const author = session.user.name ?? session.user.email ?? "A user";
+  await notifyEmails(
+    targets.filter((e) => e !== session.user.email),
+    `[Forward Deploy] ${author} submitted a plan: ${plan.title}`,
+    `${author} submitted "${plan.title}" for review.${base ? `\n${base}/plans/${planId}` : ""}`
+  );
+
   revalidatePath("/plans");
   revalidatePath(`/plans/${planId}`);
   return { ok: true };
@@ -104,7 +123,7 @@ export async function setPlanStatus(formData: FormData) {
   const session = await auth();
   if (!session?.user) return;
   // Status advances are the dev team's side of the board.
-  if (session.user.role !== "developer" && session.user.role !== "admin") return;
+  if (!isDeveloperRole(session.user.role)) return;
 
   const planId = String(formData.get("planId") ?? "");
   const to = String(formData.get("status") ?? "");

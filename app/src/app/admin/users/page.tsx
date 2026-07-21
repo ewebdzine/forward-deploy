@@ -68,10 +68,9 @@ export default async function UsersPage() {
           </div>
           <div className="stack">
             <label htmlFor="role">Role</label>
-            <select id="role" name="role" defaultValue="manager">
-              <option value="manager">manager</option>
+            <select id="role" name="role" defaultValue="user">
+              <option value="user">user</option>
               <option value="developer">developer</option>
-              <option value="admin">admin</option>
             </select>
           </div>
           <div className="stack">

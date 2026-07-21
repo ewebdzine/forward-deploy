@@ -12,7 +12,10 @@ import {
 import { relations } from "drizzle-orm";
 import type { AdapterAccountType } from "next-auth/adapters";
 
-export const roleEnum = pgEnum("role", ["admin", "developer", "manager"]);
+// Two roles: developers (source-control side; also administer the app) and
+// users (everyone documenting SOPs and building plans). "admin"/"manager" are
+// legacy values kept in the enum for old rows; treated as developer/user.
+export const roleEnum = pgEnum("role", ["admin", "developer", "manager", "user"]);
 
 export const planStatusEnum = pgEnum("plan_status", [
   "draft",
@@ -87,6 +90,11 @@ export const departments = pgTable("department", {
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull().unique(),
   slug: text("slug").notNull().unique(),
+  // Optional assigned developer; when the company has exactly one developer,
+  // they're the effective developer everywhere without assignment.
+  developerId: text("developer_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
 });
 

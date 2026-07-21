@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { requireSession, canAccessDepartment } from "@/lib/access";
+import { isDeveloperRole } from "@/auth";
 import { db, schema } from "@/db";
 import { PLAN_SECTIONS, parseOpenQuestionsDetailed } from "@/lib/plan-sections";
 import { devTransitionsFrom } from "@/lib/plan-status";
@@ -36,7 +37,7 @@ export default async function PlanViewPage({
   const editable =
     plan.status === "draft" || plan.status === "changes_requested";
   const isDev =
-    session.user.role === "developer" || session.user.role === "admin";
+    isDeveloperRole(session.user.role);
   const planSession = await db.query.planSessions.findFirst({
     where: eq(schema.planSessions.planId, plan.id),
   });

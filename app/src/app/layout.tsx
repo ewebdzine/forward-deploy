@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { auth, signOut } from "@/auth";
+import { auth, isDeveloperRole, signOut } from "@/auth";
 import SidebarNav from "@/components/sidebar-nav";
 import ThemeToggle from "@/components/theme-toggle";
 import "./globals.css";
@@ -47,7 +47,7 @@ export default async function RootLayout({
             <a className="brand" href="/">
               Forward Deploy
             </a>
-            <SidebarNav isAdmin={session.user.role === "admin"} />
+            <SidebarNav isAdmin={isDeveloperRole(session.user.role)} />
             <div className="sidebar-user">
               <span>
                 {session.user.name ?? session.user.email}{" "}

@@ -8,7 +8,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireRole("admin");
+  await requireRole("developer", "admin");
 
   return (
     <main>

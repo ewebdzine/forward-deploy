@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { and, eq, inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/access";
+import { isDeveloperRole } from "@/auth";
 import { db, schema } from "@/db";
 import { dismissCapture } from "./actions";
 
@@ -21,7 +22,7 @@ export default async function CapturesPage() {
     where: (m, { eq: e }) => e(m.userId, session.user.id),
   });
   const departments =
-    session.user.role === "manager"
+    !isDeveloperRole(session.user.role)
       ? memberships.length
         ? await db.query.departments.findMany({
             where: inArray(

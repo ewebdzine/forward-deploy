@@ -25,11 +25,11 @@ async function main() {
   if (existing) {
     await db
       .update(schema.users)
-      .set({ role: "admin", ...(name ? { name } : {}) })
+      .set({ role: "developer", ...(name ? { name } : {}) })
       .where(eq(schema.users.id, existing.id));
     console.log(`Promoted existing user ${email} to admin.`);
   } else {
-    await db.insert(schema.users).values({ email, name, role: "admin" });
+    await db.insert(schema.users).values({ email, name, role: "developer" });
     console.log(`Created admin ${email}.`);
   }
 

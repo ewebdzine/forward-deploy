@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/access";
+import { isDeveloperRole } from "@/auth";
 import { db, schema } from "@/db";
 import { listSops } from "@/lib/sops";
 import { findUndocumentedTools, listSoftwareCanons } from "@/lib/software";
@@ -11,7 +12,7 @@ export default async function HomePage() {
 
   // Managers see their departments; admins/developers see all.
   let departments;
-  if (session.user.role === "manager") {
+  if (!isDeveloperRole(session.user.role)) {
     const memberships = await db.query.departmentMembers.findMany({
       where: (m, { eq }) => eq(m.userId, session.user.id),
     });
@@ -82,7 +83,7 @@ export default async function HomePage() {
   ];
   const pendingPlans = plans.filter((p) => PENDING.includes(p.status)).length;
   const shippedPlans = plans.filter((p) => p.status === "shipped").length;
-  const isAdmin = session.user.role === "admin";
+  const isAdmin = isDeveloperRole(session.user.role);
 
   return (
     <main>
@@ -163,7 +164,7 @@ export default async function HomePage() {
       ) : (
         <div className="card">
           <p className="muted" style={{ margin: 0 }}>
-            {session.user.role === "manager"
+            {!isDeveloperRole(session.user.role)
               ? "You're not assigned to a department yet - ask your admin."
               : "No departments yet - create them under Manage > Departments."}
           </p>

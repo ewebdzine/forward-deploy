@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/access";
+import { isDeveloperRole } from "@/auth";
 import { db, schema } from "@/db";
 import { PLAN_SECTIONS, filledSectionCount, parseOpenQuestionsDetailed } from "@/lib/plan-sections";
 import { listSoftwareCanons, matchPlanSoftware } from "@/lib/software";
@@ -41,7 +42,7 @@ export default async function PlansPage({
   const { filter = "", dept = "" } = await searchParams;
 
   let plans;
-  if (session.user.role === "manager") {
+  if (!isDeveloperRole(session.user.role)) {
     const memberships = await db.query.departmentMembers.findMany({
       where: (m, { eq }) => eq(m.userId, session.user.id),
     });

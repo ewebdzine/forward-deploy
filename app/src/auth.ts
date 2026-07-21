@@ -4,7 +4,12 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 
-export type Role = "admin" | "developer" | "manager";
+export type Role = "admin" | "developer" | "manager" | "user";
+
+/** Developers (and legacy admins) - the source-control side of the house. */
+export function isDeveloperRole(role: Role): boolean {
+  return role === "developer" || role === "admin";
+}
 
 declare module "next-auth" {
   interface Session {

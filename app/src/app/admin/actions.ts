@@ -13,7 +13,7 @@ function slugify(name: string): string {
 }
 
 export async function createDepartment(formData: FormData) {
-  await requireRole("admin");
+  await requireRole("developer", "admin");
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return;
   await db
@@ -24,12 +24,12 @@ export async function createDepartment(formData: FormData) {
 }
 
 export async function inviteUser(formData: FormData) {
-  await requireRole("admin");
+  await requireRole("developer", "admin");
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const name = String(formData.get("name") ?? "").trim() || null;
-  const role = String(formData.get("role") ?? "manager") as Role;
+  const role = String(formData.get("role") ?? "user") as Role;
   const departmentId = String(formData.get("departmentId") ?? "");
-  if (!email || !["admin", "developer", "manager"].includes(role)) return;
+  if (!email || !["user", "developer", "admin", "manager"].includes(role)) return;
 
   // Creating the user row IS the invitation: signIn only mails magic links to
   // emails that exist here. Idempotent on re-invite.
@@ -58,7 +58,7 @@ export async function inviteUser(formData: FormData) {
  * already the handover document; this is the bookkeeping.
  */
 export async function transferOwnership(formData: FormData) {
-  await requireRole("admin");
+  await requireRole("developer", "admin");
   const fromId = String(formData.get("fromUserId") ?? "");
   const toId = String(formData.get("toUserId") ?? "");
   if (!fromId || !toId || fromId === toId) return;
@@ -126,8 +126,25 @@ export async function transferOwnership(formData: FormData) {
   revalidatePath("/sops");
 }
 
+/**
+ * Assign (or clear) a department's developer. With exactly one developer in
+ * the company, assignment is unnecessary - they're the effective developer
+ * everywhere automatically.
+ */
+export async function setDepartmentDeveloper(formData: FormData) {
+  await requireRole("developer", "admin");
+  const departmentId = String(formData.get("departmentId") ?? "");
+  const developerId = String(formData.get("developerId") ?? "");
+  if (!departmentId) return;
+  await db
+    .update(schema.departments)
+    .set({ developerId: developerId || null })
+    .where(eq(schema.departments.id, departmentId));
+  revalidatePath("/admin/departments");
+}
+
 export async function toggleMembership(formData: FormData) {
-  await requireRole("admin");
+  await requireRole("developer", "admin");
   const userId = String(formData.get("userId") ?? "");
   const departmentId = String(formData.get("departmentId") ?? "");
   if (!userId || !departmentId) return;

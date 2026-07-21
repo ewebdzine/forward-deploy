@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
-import { auth, type Role } from "@/auth";
+import { auth, isDeveloperRole, type Role } from "@/auth";
 import { db, schema } from "@/db";
 import type { Session } from "next-auth";
 
@@ -19,14 +19,14 @@ export async function requireRole(...roles: Role[]) {
 }
 
 /**
- * May this user work on a department's SOPs/plans? Admins and developers may
- * on any department; managers only on departments they belong to.
+ * May this user work on a department's SOPs/plans? Developers may on any
+ * department; users only on departments they belong to.
  */
 export async function canAccessDepartment(
   session: Session,
   departmentId: string
 ): Promise<boolean> {
-  if (session.user.role === "admin" || session.user.role === "developer") {
+  if (isDeveloperRole(session.user.role)) {
     return true;
   }
   const membership = await db.query.departmentMembers.findFirst({

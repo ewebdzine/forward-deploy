@@ -1,5 +1,6 @@
 import { inArray } from "drizzle-orm";
 import { requireSession } from "@/lib/access";
+import { isDeveloperRole } from "@/auth";
 import { db, schema } from "@/db";
 import { listSops } from "@/lib/sops";
 import SopsBrowser from "@/components/sops-browser";
@@ -11,7 +12,7 @@ export default async function SopsPage() {
 
   // Managers see their departments; admins/developers see all.
   let departments;
-  if (session.user.role === "manager") {
+  if (!isDeveloperRole(session.user.role)) {
     const memberships = await db.query.departmentMembers.findMany({
       where: (m, { eq }) => eq(m.userId, session.user.id),
     });
