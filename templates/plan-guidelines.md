@@ -45,10 +45,10 @@ The developer-facing section, written by Claude from exploration:
   opportunities.
 - What does NOT exist yet (searched for, not found) - the genuinely new build.
 
-## 5. Files to create & edit *(best-effort)*
+## 5. Proposed files *(best-effort)*
 
-The developer's first scan: two bullet lists, `**New:**` (files to create) and `**Edit:**`
-(files to change), each entry a repo-relative path plus one line on why. Grounded in the same
+The developer's first scan: two bullet lists, `**Proposed new:**` (files to create) and
+`**Proposed edits:**` (files to change), each entry a repo-relative path plus one line on why. Grounded in the same
 exploration as section 4 - append `(verify)` to any entry that is an educated guess rather than
 a confirmed touch point. The dev team refines this list during review; it is a map, not a
 contract.

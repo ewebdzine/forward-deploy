@@ -30,9 +30,9 @@ export const PLAN_SECTIONS = [
   },
   {
     key: "files",
-    label: "Files to create & edit",
+    label: "Proposed files",
     required: false,
-    hint: "Two bullet lists - '**New:**' files to create and '**Edit:**' files to change - repo-relative path plus one line on why. Grounded in exploration; append '(verify)' to any entry that is a best guess. The dev team refines this at review.",
+    hint: "Two bullet lists - '**Proposed new:**' files to create and '**Proposed edits:**' files to change - repo-relative path plus one line on why. Grounded in exploration; append '(verify)' to any entry that is a best guess. A proposal the dev team refines at review, never a contract.",
   },
   {
     key: "open_questions",
