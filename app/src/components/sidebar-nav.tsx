@@ -15,6 +15,7 @@ export const WORKSPACE_LINKS = [
 export const ADMIN_LINKS = [
   { href: "/admin/departments", label: "Departments" },
   { href: "/admin/users", label: "Users" },
+  { href: "/admin/billing", label: "Billing" },
 ];
 const WORKSPACE = WORKSPACE_LINKS;
 const ADMIN = ADMIN_LINKS;

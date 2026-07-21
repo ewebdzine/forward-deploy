@@ -17,6 +17,8 @@ export default async function AdminLayout({
         <Link href="/admin/departments">Departments</Link>
         {" - "}
         <Link href="/admin/users">Users</Link>
+        {" - "}
+        <Link href="/admin/billing">Billing</Link>
       </p>
       {children}
     </main>

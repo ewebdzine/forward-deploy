@@ -840,6 +840,35 @@ tr:last-child td {
   white-space: pre-wrap;
 }
 
+/* billing: daily bar chart */
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 140px;
+  padding-top: 0.4rem;
+}
+.bar-chart .bar {
+  flex: 1;
+  min-width: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+  opacity: 0.9;
+}
+.bar-chart .bar:hover {
+  opacity: 1;
+}
+.bar-chart .bar-empty {
+  background: var(--border);
+  opacity: 0.6;
+}
+.bar-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  margin-top: 0.35rem;
+}
+
 /* toast notifications (top-right, animate in/out) */
 .toast {
   position: fixed;
