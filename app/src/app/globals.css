@@ -272,9 +272,11 @@ main.wide {
     padding: 0.2rem 0;
     font-size: 1.1rem;
   }
-  /* Desktop nav + user block hide; the hamburger overlay takes over. */
-  .sidebar nav,
-  .sidebar-user {
+  /* Desktop nav + user block hide; the hamburger overlay takes over.
+     Direct-child scoped so the overlay's own nav (nested inside the
+     sidebar) stays visible. */
+  .sidebar > nav,
+  .sidebar > .sidebar-user {
     display: none;
   }
   .hamburger {
