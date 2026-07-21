@@ -35,7 +35,9 @@ manager <-> developer thread, and advance its status - without leaving Claude Co
 
 5. **Act** (only what the user asks for):
    - **Reply:** `POST <appUrl>/api/plans/<id>/messages` with the drafted reply - show the draft
-     and get a confirm before posting; it is outward-facing to the manager.
+     and get a confirm before posting; it is outward-facing to the manager. Always include
+     `authorEmail` set to `git config user.email` so the thread shows the actual developer, not
+     the CLI system user (an unmatched email falls back to the system user harmlessly).
    - **Advance status:** `PATCH <appUrl>/api/plans/<id>` (e.g. `in_review`, `changes_requested`,
      `approved`) - state the transition before making it.
    - **Approved and ready to build?** Hand off to `/forward-deploy:pull-plan`.
@@ -79,6 +81,6 @@ logged as subscription tokens at $0:
    across assistant turns. Best-effort - skip silently if the transcript isn't readable.
 2. `POST <appUrl>/api/plans/<id>/usage` with
    `{ "phase": "review", "tokensIn": ..., "tokensOut": ..., "tokensCacheWrite": ...,
-      "tokensCacheRead": ..., "authorEmail": "<the developer's email if known>" }`
+      "tokensCacheRead": ..., "authorEmail": "<git config user.email>" }`
    (bearer `FORWARD_DEPLOY_TOKEN`).
 3. Confirm in one line: "Logged <N> review tokens to the plan."

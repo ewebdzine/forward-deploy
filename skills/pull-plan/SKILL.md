@@ -75,5 +75,5 @@ builds run on the team's Claude plan, logged as subscription tokens at $0:
 - Sum the session's `message.usage` fields from the newest transcript `.jsonl` under
   `~/.claude/projects/<cwd-slug>/`, then
   `POST <appUrl>/api/plans/<id>/usage` with `{ "phase": "build", ...token counts...,
-  "authorEmail": "<developer email>" }` (bearer `FORWARD_DEPLOY_TOKEN`). Best-effort; one-line
+  "authorEmail": "<git config user.email>" }` (bearer `FORWARD_DEPLOY_TOKEN`). Best-effort; one-line
   confirm. When the feature ships, also advance the plan to `shipped` via the plans API.
