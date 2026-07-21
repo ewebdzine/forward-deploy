@@ -1,3 +1,4 @@
+import React from "react";
 import Link from "next/link";
 import { and, gte, inArray, lt } from "drizzle-orm";
 import { db, schema } from "@/db";
@@ -181,10 +182,42 @@ export default async function BillingPage({
   const planTitle = new Map(plans.map((p) => [p.id, p.title]));
   const deptName = new Map(departments.map((d) => [d.slug, d.name]));
 
-  const byUser = [...groupBy(rows, (r) => r.userId)].map(([id, bucket]) => ({
-    name: userName.get(id) ?? id,
-    bucket,
-  }));
+  // P&L grouping: department -> users within it. A usage row belongs to the
+  // plan's department (kind=plan) or the SOP session's department (kind=sop).
+  const deptIdBySlug = new Map(departments.map((d) => [d.slug, d.id]));
+  const deptNameById = new Map(departments.map((d) => [d.id, d.name]));
+  const planDept = new Map(plans.map((p) => [p.id, p.departmentId]));
+  const deptOf = (r: (typeof rows)[number]) =>
+    r.kind === "sop"
+      ? (deptIdBySlug.get(r.refId) ?? "other")
+      : (planDept.get(r.refId) ?? "other");
+
+  const pl = new Map<string, { total: Bucket; users: Map<string, Bucket> }>();
+  for (const r of rows) {
+    const d = deptOf(r);
+    if (!pl.has(d)) pl.set(d, { total: emptyBucket(), users: new Map() });
+    const entry = pl.get(d)!;
+    addRow(entry.total, r);
+    if (!entry.users.has(r.userId)) entry.users.set(r.userId, emptyBucket());
+    addRow(entry.users.get(r.userId)!, r);
+  }
+  const plSections = [...pl]
+    .map(([deptId, entry]) => ({
+      name: deptNameById.get(deptId) ?? "Other",
+      total: entry.total,
+      users: [...entry.users]
+        .map(([uid, bucket]) => ({ name: userName.get(uid) ?? uid, bucket }))
+        .sort(
+          (a, b) =>
+            (estimateCostUsd(b.bucket) ?? b.bucket.tokensOut) -
+            (estimateCostUsd(a.bucket) ?? a.bucket.tokensOut)
+        ),
+    }))
+    .sort(
+      (a, b) =>
+        (estimateCostUsd(b.total) ?? b.total.tokensOut) -
+        (estimateCostUsd(a.total) ?? a.total.tokensOut)
+    );
   const byPlan = [...groupBy(planRows, (r) => r.refId)].map(([id, bucket]) => ({
     name: planTitle.get(id) ?? id,
     bucket,
@@ -294,11 +327,94 @@ export default async function BillingPage({
         </div>
       </div>
 
-      <BreakdownTable
-        title="By user"
-        note="Who is spending the tokens - every AI turn is attributed."
-        rows={byUser}
-      />
+      <div className="card">
+        <h2 style={{ marginTop: 0 }}>Cost by department</h2>
+        <p className="muted">
+          P&amp;L view - each department&apos;s total Claude spend, with the
+          people inside it beneath. Plan turns attribute to the plan&apos;s
+          department; SOP turns to the department being documented.
+        </p>
+        {plSections.length ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Department / user</th>
+                <th style={{ textAlign: "right" }}>Turns</th>
+                <th style={{ textAlign: "right" }}>Input</th>
+                <th style={{ textAlign: "right" }}>Output</th>
+                <th style={{ textAlign: "right" }}>Cache read</th>
+                <th style={{ textAlign: "right" }}>Est. cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {plSections.map((s) => {
+                const deptCost = estimateCostUsd(s.total);
+                return (
+                  <React.Fragment key={s.name}>
+                    <tr className="pl-dept-row">
+                      <td>{s.name}</td>
+                      <td style={{ textAlign: "right" }}>{s.total.turns}</td>
+                      <td style={{ textAlign: "right" }}>
+                        {(s.total.tokensIn + s.total.tokensCacheWrite).toLocaleString()}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        {s.total.tokensOut.toLocaleString()}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        {s.total.tokensCacheRead.toLocaleString()}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        {deptCost !== null ? formatUsd(deptCost) : "-"}
+                      </td>
+                    </tr>
+                    {s.users.map((u) => {
+                      const cost = estimateCostUsd(u.bucket);
+                      return (
+                        <tr key={`${s.name}-${u.name}`}>
+                          <td className="pl-user-cell">{u.name}</td>
+                          <td style={{ textAlign: "right" }}>{u.bucket.turns}</td>
+                          <td style={{ textAlign: "right" }}>
+                            {(u.bucket.tokensIn + u.bucket.tokensCacheWrite).toLocaleString()}
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            {u.bucket.tokensOut.toLocaleString()}
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            {u.bucket.tokensCacheRead.toLocaleString()}
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            {cost !== null ? formatUsd(cost) : "-"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
+              <tr className="pl-grand-row">
+                <td>Total</td>
+                <td style={{ textAlign: "right" }}>{total.turns}</td>
+                <td style={{ textAlign: "right" }}>
+                  {(total.tokensIn + total.tokensCacheWrite).toLocaleString()}
+                </td>
+                <td style={{ textAlign: "right" }}>
+                  {total.tokensOut.toLocaleString()}
+                </td>
+                <td style={{ textAlign: "right" }}>
+                  {total.tokensCacheRead.toLocaleString()}
+                </td>
+                <td style={{ textAlign: "right" }}>
+                  {totalCost !== null ? formatUsd(totalCost) : "-"}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        ) : (
+          <p className="muted" style={{ margin: 0 }}>
+            No usage in this range.
+          </p>
+        )}
+      </div>
       <BreakdownTable
         title="By plan"
         note="What each plan's interview and codebase exploration cost."

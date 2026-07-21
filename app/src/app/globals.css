@@ -869,6 +869,21 @@ tr:last-child td {
   margin-top: 0.35rem;
 }
 
+/* billing P&L: department heading rows with nested users */
+.pl-dept-row td {
+  background: var(--surface-2);
+  font-weight: 600;
+  font-family: var(--font-display);
+}
+.pl-user-cell {
+  padding-left: 1.6rem !important;
+  color: var(--muted);
+}
+.pl-grand-row td {
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+}
+
 /* toast notifications (top-right, animate in/out) */
 .toast {
   position: fixed;
