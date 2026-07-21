@@ -283,6 +283,22 @@ main.wide {
   main {
     padding: 1.4rem 1.1rem 4rem;
   }
+  /* Wide tables scroll inside their card instead of bleeding off-screen. */
+  .card {
+    overflow-x: auto;
+  }
+  .card table {
+    white-space: nowrap;
+    font-size: 0.85rem;
+  }
+  .card th,
+  .card td {
+    padding: 0.45rem 0.5rem;
+  }
+  /* The chat fills the viewport minus the sticky mobile top bar. */
+  .chat-page {
+    height: calc(100dvh - 52px);
+  }
 }
 
 /* ---------- cards, forms, tables ---------- */
