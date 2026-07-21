@@ -45,18 +45,26 @@ The developer-facing section, written by Claude from exploration:
   opportunities.
 - What does NOT exist yet (searched for, not found) - the genuinely new build.
 
-## 5. Mockups *(as applicable)*
+## 5. Files to create & edit *(best-effort)*
+
+The developer's first scan: two bullet lists, `**New:**` (files to create) and `**Edit:**`
+(files to change), each entry a repo-relative path plus one line on why. Grounded in the same
+exploration as section 4 - append `(verify)` to any entry that is an educated guess rather than
+a confirmed touch point. The dev team refines this list during review; it is a map, not a
+contract.
+
+## 6. Mockups *(as applicable)*
 
 High-level HTML mockups of any new/changed screens, generated from the company profile's
 branding tokens. Look-and-feel and layout only - production code comes later. Each mockup gets a
 one-line caption of what it shows.
 
-## 6. Open questions *(required, may be "none")*
+## 7. Open questions *(required, may be "none")*
 
 What the manager could not answer and who can; decisions deliberately left to the developers;
 data/access unknowns (does the vendor have an API? who owns that account?).
 
-## 7. Rough scope signal *(required)*
+## 8. Rough scope signal *(required)*
 
 Small / medium / large / needs-a-spike, with one sentence on the driver ("large: no existing
 integration with <vendor>, and three departments' workflows change"). Claude sets this from

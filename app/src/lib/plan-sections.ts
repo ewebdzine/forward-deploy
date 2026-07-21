@@ -29,6 +29,12 @@ export const PLAN_SECTIONS = [
     hint: "Existing code/canons this touches (file:line citations), intersecting SOPs, and what genuinely doesn't exist yet.",
   },
   {
+    key: "files",
+    label: "Files to create & edit",
+    required: false,
+    hint: "Two bullet lists - '**New:**' files to create and '**Edit:**' files to change - repo-relative path plus one line on why. Grounded in exploration; append '(verify)' to any entry that is a best guess. The dev team refines this at review.",
+  },
+  {
     key: "open_questions",
     label: "Open questions",
     required: true,
