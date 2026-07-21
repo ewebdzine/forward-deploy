@@ -11,6 +11,14 @@ export type Usage = {
   tokensCacheRead: number;
 };
 
+export function pricesConfigured(): boolean {
+  const priceIn = Number(process.env.PRICE_PER_MTOK_IN);
+  const priceOut = Number(process.env.PRICE_PER_MTOK_OUT);
+  return (
+    Number.isFinite(priceIn) && Number.isFinite(priceOut) && priceIn > 0 && priceOut > 0
+  );
+}
+
 export function estimateCostUsd(u: Usage): number | null {
   const priceIn = Number(process.env.PRICE_PER_MTOK_IN);
   const priceOut = Number(process.env.PRICE_PER_MTOK_OUT);

@@ -66,3 +66,19 @@ Thread: <last few messages>
 
 Actions: reply | set status | pull-plan
 ```
+
+## Log the review's token usage (last step)
+
+When the review wraps (status advanced or replies posted), report this session's token usage so
+the plan's lifecycle view shows the full scope - review runs on the team's Claude plan, so it's
+logged as subscription tokens at $0:
+
+1. Sum this session's usage from the Claude Code transcript (newest `.jsonl` under
+   `~/.claude/projects/<cwd-slug>/`): total the `message.usage` fields
+   (`input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`)
+   across assistant turns. Best-effort - skip silently if the transcript isn't readable.
+2. `POST <appUrl>/api/plans/<id>/usage` with
+   `{ "phase": "review", "tokensIn": ..., "tokensOut": ..., "tokensCacheWrite": ...,
+      "tokensCacheRead": ..., "authorEmail": "<the developer's email if known>" }`
+   (bearer `FORWARD_DEPLOY_TOKEN`).
+3. Confirm in one line: "Logged <N> review tokens to the plan."

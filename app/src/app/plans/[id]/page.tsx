@@ -41,6 +41,29 @@ export default async function PlanViewPage({
   const planSession = await db.query.planSessions.findFirst({
     where: eq(schema.planSessions.planId, plan.id),
   });
+  const usageRows = await db.query.usageLog.findMany({
+    where: eq(schema.usageLog.refId, plan.id),
+  });
+  const PHASES = [
+    { kind: "plan", label: "Planning (in-app)" },
+    { kind: "review", label: "Dev review (Claude Code)" },
+    { kind: "build", label: "Build (Claude Code)" },
+  ] as const;
+  const phaseRows = PHASES.map((p) => {
+    const rows = usageRows.filter((r) => r.kind === p.kind);
+    const sum = rows.reduce(
+      (b, r) => ({
+        turns: b.turns + 1,
+        tokensIn: b.tokensIn + r.tokensIn,
+        tokensOut: b.tokensOut + r.tokensOut,
+        tokensCacheWrite: b.tokensCacheWrite + r.tokensCacheWrite,
+        tokensCacheRead: b.tokensCacheRead + r.tokensCacheRead,
+        api: b.api || r.source === "api",
+      }),
+      { turns: 0, tokensIn: 0, tokensOut: 0, tokensCacheWrite: 0, tokensCacheRead: 0, api: false }
+    );
+    return { ...p, sum };
+  }).filter((p) => p.sum.turns > 0);
   const turnCount = ((planSession?.transcript as unknown[]) ?? []).length;
   const openQuestions = parseOpenQuestionsDetailed(plan.sections);
   const forManager = openQuestions.filter((q) => q.audience === "manager").length;
@@ -243,6 +266,56 @@ export default async function PlanViewPage({
             />
             <button type="submit">Post reply</button>
           </form>
+        </div>
+      )}
+
+      {phaseRows.length > 0 && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Token usage across the lifecycle</h2>
+          <p className="muted">
+            The full scope from idea to shipped: in-app planning bills the API;
+            dev review and build run in Claude Code on the team&apos;s Claude
+            plan, so their tokens count but cost nothing extra.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Phase</th>
+                <th style={{ textAlign: "right" }}>Turns</th>
+                <th style={{ textAlign: "right" }}>Input</th>
+                <th style={{ textAlign: "right" }}>Output</th>
+                <th style={{ textAlign: "right" }}>Cache read</th>
+                <th style={{ textAlign: "right" }}>Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {phaseRows.map((p) => {
+                const cost = p.sum.api ? estimateCostUsd(p.sum) : null;
+                return (
+                  <tr key={p.kind}>
+                    <td>{p.label}</td>
+                    <td style={{ textAlign: "right" }}>{p.sum.turns}</td>
+                    <td style={{ textAlign: "right" }}>
+                      {(p.sum.tokensIn + p.sum.tokensCacheWrite).toLocaleString()}
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      {p.sum.tokensOut.toLocaleString()}
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      {p.sum.tokensCacheRead.toLocaleString()}
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      {p.sum.api
+                        ? cost !== null
+                          ? formatUsd(cost)
+                          : "-"
+                        : "$0 - Claude plan"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 

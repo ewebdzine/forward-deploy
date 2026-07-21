@@ -65,3 +65,15 @@ Thread highlights: <decisions made during review>
 Status: in_development <set | proposed>
 Next: /canonify:build "<task framing>"  (or enter plan mode with this brief)
 ```
+
+## Log build usage as you go
+
+The pulled plan's id stays relevant after the pull: whenever a build session for this plan wraps
+(or hits a milestone), report its token usage so the plan's lifecycle view stays complete -
+builds run on the team's Claude plan, logged as subscription tokens at $0:
+
+- Sum the session's `message.usage` fields from the newest transcript `.jsonl` under
+  `~/.claude/projects/<cwd-slug>/`, then
+  `POST <appUrl>/api/plans/<id>/usage` with `{ "phase": "build", ...token counts...,
+  "authorEmail": "<developer email>" }` (bearer `FORWARD_DEPLOY_TOKEN`). Best-effort; one-line
+  confirm. When the feature ships, also advance the plan to `shipped` via the plans API.

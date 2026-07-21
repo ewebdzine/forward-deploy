@@ -216,8 +216,11 @@ export const usageLog = pgTable("usage_log", {
   userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  kind: text("kind").$type<"plan" | "sop">().notNull(),
+  // plan/sop = in-app builder turns (API-billed). review/build = Claude Code
+  // sessions reported by the skills (subscription - tokens count, cost $0).
+  kind: text("kind").$type<"plan" | "sop" | "review" | "build">().notNull(),
   refId: text("ref_id").notNull(),
+  source: text("source").$type<"api" | "subscription">().notNull().default("api"),
   tokensIn: integer("tokens_in").notNull().default(0),
   tokensOut: integer("tokens_out").notNull().default(0),
   tokensCacheWrite: integer("tokens_cache_write").notNull().default(0),

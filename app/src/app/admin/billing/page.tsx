@@ -2,7 +2,12 @@ import React from "react";
 import Link from "next/link";
 import { and, gte, inArray, lt } from "drizzle-orm";
 import { db, schema } from "@/db";
-import { estimateCostUsd, formatUsd, type Usage } from "@/lib/pricing";
+import {
+  estimateCostUsd,
+  formatUsd,
+  pricesConfigured,
+  type Usage,
+} from "@/lib/pricing";
 
 export const metadata = { title: "Billing - Forward Deploy" };
 
@@ -35,13 +40,16 @@ function rangeBounds(key: RangeKey): { start: Date; end: Date } {
   };
 }
 
-type Bucket = Usage & { turns: number };
+// apiCost sums only API-billed rows; subscription rows (Claude Code review/
+// build phases) contribute tokens but zero dollars.
+type Bucket = Usage & { turns: number; apiCost: number };
 const emptyBucket = (): Bucket => ({
   turns: 0,
   tokensIn: 0,
   tokensOut: 0,
   tokensCacheWrite: 0,
   tokensCacheRead: 0,
+  apiCost: 0,
 });
 function addRow(b: Bucket, r: typeof schema.usageLog.$inferSelect) {
   b.turns += 1;
@@ -49,6 +57,7 @@ function addRow(b: Bucket, r: typeof schema.usageLog.$inferSelect) {
   b.tokensOut += r.tokensOut;
   b.tokensCacheWrite += r.tokensCacheWrite;
   b.tokensCacheRead += r.tokensCacheRead;
+  if (r.source === "api") b.apiCost += estimateCostUsd(r) ?? 0;
 }
 function groupBy(
   rows: (typeof schema.usageLog.$inferSelect)[],
@@ -67,10 +76,12 @@ function BreakdownTable({
   title,
   note,
   rows,
+  pricesOk,
 }: {
   title: string;
   note: string;
   rows: { name: string; bucket: Bucket }[];
+  pricesOk: boolean;
 }) {
   return (
     <div className="card">
@@ -92,11 +103,11 @@ function BreakdownTable({
             {rows
               .sort(
                 (a, b) =>
-                  (estimateCostUsd(b.bucket) ?? b.bucket.tokensOut) -
-                  (estimateCostUsd(a.bucket) ?? a.bucket.tokensOut)
+                  (pricesOk ? b.bucket.apiCost : b.bucket.tokensOut) -
+                  (pricesOk ? a.bucket.apiCost : a.bucket.tokensOut)
               )
               .map((r) => {
-                const cost = estimateCostUsd(r.bucket);
+                const cost = pricesOk ? r.bucket.apiCost : null;
                 return (
                   <tr key={r.name}>
                     <td>{r.name}</td>
@@ -151,18 +162,18 @@ export default async function BillingPage({
   );
   const billedTotal = billedInRange.reduce((s, b) => s + b.amountUsd, 0);
 
+  const pricesOk = pricesConfigured();
   const total = emptyBucket();
   rows.forEach((r) => addRow(total, r));
-  const totalCost = estimateCostUsd(total);
+  const totalCost = pricesOk ? total.apiCost : null;
 
-  const planRows = rows.filter((r) => r.kind === "plan");
+  // plan-lifecycle rows = in-app planning + Claude Code review/build phases.
+  const planRows = rows.filter((r) => r.kind !== "sop");
   const sopRows = rows.filter((r) => r.kind === "sop");
-  const planCost = estimateCostUsd(
-    planRows.reduce((b, r) => (addRow(b, r), b), emptyBucket())
-  );
-  const sopCost = estimateCostUsd(
-    sopRows.reduce((b, r) => (addRow(b, r), b), emptyBucket())
-  );
+  const planBucket = planRows.reduce((b, r) => (addRow(b, r), b), emptyBucket());
+  const sopBucket = sopRows.reduce((b, r) => (addRow(b, r), b), emptyBucket());
+  const planCost = pricesOk ? planBucket.apiCost : null;
+  const sopCost = pricesOk ? sopBucket.apiCost : null;
 
   // Resolve display names.
   const [users, plans, departments] = await Promise.all([
@@ -209,14 +220,14 @@ export default async function BillingPage({
         .map(([uid, bucket]) => ({ name: userName.get(uid) ?? uid, bucket }))
         .sort(
           (a, b) =>
-            (estimateCostUsd(b.bucket) ?? b.bucket.tokensOut) -
-            (estimateCostUsd(a.bucket) ?? a.bucket.tokensOut)
+            (pricesOk ? b.bucket.apiCost : b.bucket.tokensOut) -
+            (pricesOk ? a.bucket.apiCost : a.bucket.tokensOut)
         ),
     }))
     .sort(
       (a, b) =>
-        (estimateCostUsd(b.total) ?? b.total.tokensOut) -
-        (estimateCostUsd(a.total) ?? a.total.tokensOut)
+        (pricesOk ? b.total.apiCost : b.total.tokensOut) -
+        (pricesOk ? a.total.apiCost : a.total.tokensOut)
     );
   const byPlan = [...groupBy(planRows, (r) => r.refId)].map(([id, bucket]) => ({
     name: planTitle.get(id) ?? id,
@@ -238,20 +249,19 @@ export default async function BillingPage({
   ) {
     const key = d.toISOString().slice(0, 10);
     const bucket = byDay.get(key);
-    const cost = bucket ? estimateCostUsd(bucket) : null;
-    const value = bucket ? (cost ?? bucket.tokensOut) : 0;
+    const value = bucket ? (pricesOk ? bucket.apiCost : bucket.tokensOut) : 0;
     days.push({
       day: key,
       value,
       label: bucket
-        ? cost !== null
-          ? `${key}: ${formatUsd(cost)} (${bucket.turns} turns)`
+        ? pricesOk
+          ? `${key}: ${formatUsd(bucket.apiCost)} API (${bucket.turns} turns)`
           : `${key}: ${bucket.tokensOut.toLocaleString()} output tokens`
         : `${key}: no usage`,
     });
   }
   const maxValue = Math.max(...days.map((d) => d.value), 1);
-  const pricesSet = totalCost !== null || rows.length === 0;
+  const pricesSet = pricesOk || rows.length === 0;
 
   return (
     <>
@@ -348,7 +358,7 @@ export default async function BillingPage({
             </thead>
             <tbody>
               {plSections.map((s) => {
-                const deptCost = estimateCostUsd(s.total);
+                const deptCost = pricesOk ? s.total.apiCost : null;
                 return (
                   <React.Fragment key={s.name}>
                     <tr className="pl-dept-row">
@@ -368,7 +378,7 @@ export default async function BillingPage({
                       </td>
                     </tr>
                     {s.users.map((u) => {
-                      const cost = estimateCostUsd(u.bucket);
+                      const cost = pricesOk ? u.bucket.apiCost : null;
                       return (
                         <tr key={`${s.name}-${u.name}`}>
                           <td className="pl-user-cell">{u.name}</td>
@@ -417,13 +427,15 @@ export default async function BillingPage({
       </div>
       <BreakdownTable
         title="By plan"
-        note="What each plan's interview and codebase exploration cost."
+        note="Full lifecycle per plan - in-app planning (API-billed) plus Claude Code review/build tokens (subscription, $0). Cost column is the API spend only."
         rows={byPlan}
+        pricesOk={pricesOk}
       />
       <BreakdownTable
         title="By SOP department"
         note="Documenting sessions, grouped by the department they belong to."
         rows={bySop}
+        pricesOk={pricesOk}
       />
     </>
   );
